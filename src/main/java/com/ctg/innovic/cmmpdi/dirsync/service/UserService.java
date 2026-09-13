@@ -5,6 +5,7 @@ import com.ctg.innovic.cmmpdi.dirsync.dto.Person;
 import com.ctg.innovic.cmmpdi.dirsync.mapper.UserAttributeMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.ldap.core.DirContextAdapter;
@@ -18,13 +19,14 @@ import java.util.List;
 @Service
 public class UserService {
 
-    ApplicationContext context = null;
+    private final ApplicationContext context;
 
-    public UserService() {
-        context = new AnnotationConfigApplicationContext(ApplicationConfig.class);
+    @Autowired
+    public UserService(ApplicationContext applicationContext) {
+        this.context = applicationContext;
     }
 
-    private static Logger logger = LogManager.getLogger(ApplicationConfig.class);
+    private static Logger logger = LogManager.getLogger(UserService.class);
 
     public List<Person> listUsers() {
 

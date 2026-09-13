@@ -24,9 +24,6 @@ public class DataImportService {
 
     private UserService userService;
 
-    public DataImportService() {
-        userService = new UserService();
-    }
 
     public void importUserData(String fileName) {
 
