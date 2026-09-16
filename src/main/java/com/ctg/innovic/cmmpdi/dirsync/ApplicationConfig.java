@@ -68,11 +68,4 @@ public class ApplicationConfig {
         return new LdapTemplate(contextSource);
     }
 
-//    public String getInputFileDirectory() {
-//        return inputFileDirectory;
-//    }
-//
-//    public String getProcessedFilePathDirectory() {
-//        return processedFilePathDirectory;
-//    }
 }

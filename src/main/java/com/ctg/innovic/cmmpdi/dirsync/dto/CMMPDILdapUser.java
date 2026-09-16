@@ -48,6 +48,9 @@ public final class CMMPDILdapUser {
     @Attribute(name = "extensionAttribute1")
     private int extensionAttribute1;
 
+
+    private String bdCode;
+
     public boolean isCMMPDIMailbox() {
 
         if ( this.extensionAttribute3 >= 4 ) {
@@ -71,6 +74,21 @@ public final class CMMPDILdapUser {
         return dn;
     }
 
+    public String getSurname() {
+        return surname;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getDistinguishedName() {
+        return distinguishedName;
+    }
+
+    public int getExtensionAttribute3() {
+        return extensionAttribute3;
+    }
 
     // Getters and Setters
 //    public LdapName getDn() { return dn; }

@@ -11,8 +11,16 @@ import java.util.List;
 @Getter
 @Setter
 public class CMMPExchangeContainer {
+
     private List<CMMPExchangeLdapUser> users = new ArrayList<>();
+
+    private List<CMMPExchangeLdapGroup> groups = new ArrayList<>();
+
     private List<CMMPExchangeOrganizationalUnit> organizationalUnits = new ArrayList<>();
+
+    public List<CMMPExchangeLdapGroup> getGroups() {
+        return groups;
+    }
 
     public List<CMMPExchangeLdapUser> getUsers() {
         return users;

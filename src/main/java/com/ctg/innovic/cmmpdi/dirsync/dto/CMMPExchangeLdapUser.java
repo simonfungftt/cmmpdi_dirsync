@@ -2,8 +2,6 @@ package com.ctg.innovic.cmmpdi.dirsync.dto;
 
 import lombok.Data;
 
-import java.util.List;
-
 @Data
 public class CMMPExchangeLdapUser {
 
@@ -32,6 +30,9 @@ public class CMMPExchangeLdapUser {
         this.mail = mail;
     }
 
+    public String getDn() {
+        return dn;
+    }
 
     public void setCn(String cn) {
         this.cn = cn;

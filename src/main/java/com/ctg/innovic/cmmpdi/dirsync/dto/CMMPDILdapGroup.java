@@ -27,6 +27,9 @@ public final class CMMPDILdapGroup {
     @Attribute(name = "mail")
     private String email;
 
+    @Attribute(name = "distinguishedName")
+    private String distinguishedName;
+
     // Multi-valued attribute mapping to store member DNs
     @Attribute(name = "member")
     private Set<Name> members = new HashSet<>();
@@ -52,6 +55,10 @@ public final class CMMPDILdapGroup {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getDistinguishedName() {
+        return distinguishedName;
+    }
 
     // Helper methods for managing group membership
     public void addMember(Name userDn) {

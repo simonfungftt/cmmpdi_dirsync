@@ -14,9 +14,9 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class LdapCacheService {
+public class CMMPDILdapCacheService {
 
-    private static Logger logger = LogManager.getLogger(LdapCacheService.class);
+    private static Logger logger = LogManager.getLogger(CMMPDILdapCacheService.class);
 
     @Autowired
     private CMMPDILdapQueryService ldapQueryService;
@@ -27,7 +27,7 @@ public class LdapCacheService {
     private Map<String, String> cmmpUserDn2SMTPMap;
     private Map<String, String> cmmpGroupDn2SMTPMap;
 
-    public LdapCacheService() {
+    public CMMPDILdapCacheService() {
         this.cmmpdiUserSMTP2DnMap = new HashMap<>();
         this.cmmpdiGroupSMTP2DnMap = new HashMap<>();
 
@@ -44,14 +44,16 @@ public class LdapCacheService {
     }
 
 
-
     public void initCMMPDI() {
 
         logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
         logger.info("Initialising CMMP-DI users...");
 
-        List<CMMPDILdapUser> _users = this.ldapQueryService.listUsers();
+        this.cmmpUserDn2SMTPMap.clear();
+        this.cmmpGroupDn2SMTPMap.clear();
+
+        List<CMMPDILdapUser> _users = this.ldapQueryService.listCMMPDIUsers();
 
         for ( CMMPDILdapUser _user : _users ) {
             if ( _user.getEmail() != null ) {
@@ -63,7 +65,7 @@ public class LdapCacheService {
 
         logger.info("Initialising CMMP-DI groups...");
 
-        List<CMMPDILdapGroup> _groups = this.ldapQueryService.listGroups();
+        List<CMMPDILdapGroup> _groups = this.ldapQueryService.listCMMPDIGroups();
 
         for ( CMMPDILdapGroup _group : _groups ) {
             if ( _group.getEmail() != null ) {
@@ -74,7 +76,7 @@ public class LdapCacheService {
         logger.info(this.cmmpdiGroupSMTP2DnMap.size() + " group entries had been initialised...");
     }
 
-
+/*
     public String getCMMPDIDnBySMTP(String pSmtp) {
 
         if ( StringUtils.trimToNull(pSmtp) != null ) {
@@ -94,6 +96,54 @@ public class LdapCacheService {
 
         return null;
     }
+*/
+
+    public void removeGroupCache(CMMPDILdapGroup pCMMPDILdapGroup) {
+
+        if ( pCMMPDILdapGroup != null ) {
+            this.cmmpdiGroupSMTP2DnMap.remove(pCMMPDILdapGroup.getEmail());
+        }
+    }
+
+    public void addGroupCache(String smtp) {
+
+        List<CMMPDILdapGroup> _groups = this.ldapQueryService.findGroupByEmail(smtp);
+
+        if ( _groups != null && _groups.isEmpty() == false) {
+            this.addGroupCache(_groups.get(0));
+        }
+    }
+
+    public void addGroupCache(CMMPDILdapGroup pCMMPDILdapGroup) {
+
+        if ( pCMMPDILdapGroup != null ) {
+            this.cmmpdiGroupSMTP2DnMap.put(pCMMPDILdapGroup.getEmail(), pCMMPDILdapGroup);
+        }
+    }
+
+    public void removeUserCache(CMMPDILdapUser pCMMPDILdapUser) {
+
+        if ( pCMMPDILdapUser != null ) {
+            this.cmmpdiUserSMTP2DnMap.remove(pCMMPDILdapUser.getEmail());
+        }
+    }
+
+    public void addUserCache(String smtp) {
+
+        List<CMMPDILdapUser> _users = this.ldapQueryService.findUsersByEmail(smtp);
+
+        if ( _users != null && _users.isEmpty() == false) {
+            this.addUserCache(_users.get(0));
+        }
+    }
+
+    public void addUserCache(CMMPDILdapUser pCMMPDILdapUser) {
+
+        if ( pCMMPDILdapUser != null ) {
+            this.cmmpdiUserSMTP2DnMap.put(pCMMPDILdapUser.getEmail(), pCMMPDILdapUser);
+        }
+    }
+
 
 
     public CMMPDILdapGroup getCMMPDIGroupDnBySMTP(String pSmtp) {
@@ -121,7 +171,7 @@ public class LdapCacheService {
         return null;
     }
 
-
+/*
     public String translateCMMPDnIntoSMTP(String dn) {
 
         logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
@@ -140,5 +190,5 @@ public class LdapCacheService {
 
         return null;
     }
-
+*/
 }

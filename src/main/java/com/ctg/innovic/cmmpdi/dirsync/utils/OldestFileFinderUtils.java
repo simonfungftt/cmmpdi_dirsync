@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 @Service
-public class OldestFileFinderService {
+public class OldestFileFinderUtils {
 
     public Optional<Path> getOldestFile(String dirPath, String fileExtension) throws IOException {
         Path path = Paths.get(dirPath);
