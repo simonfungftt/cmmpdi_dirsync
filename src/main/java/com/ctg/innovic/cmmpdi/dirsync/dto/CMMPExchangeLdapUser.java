@@ -16,6 +16,8 @@ public class CMMPExchangeLdapUser {
     private String title;
     private int countryCode;
     private byte[] userCert;
+    private byte[] userSMIMECertificate;
+    private byte[] userCertificate;
     private int extensionAttribute1;
     private int extensionAttribute4;
     private int extensionAttribute3;
@@ -45,6 +47,23 @@ public class CMMPExchangeLdapUser {
 
     public void setDn(String dn) {
         this.dn = dn;
+    }
+
+
+    public String getDistinguishedName() {
+        return distinguishedName;
+    }
+
+    public void setDistinguishedName(String distinguishedName) {
+        this.distinguishedName = distinguishedName;
+    }
+
+    public void setUserCertificate(byte[] userCertificate) {
+        this.userCertificate = userCertificate;
+    }
+
+    public void setUserSMIMECertificate(byte[] userSMIMECertificate) {
+        this.userSMIMECertificate = userSMIMECertificate;
     }
 
     public int getExtensionAttribute1() {

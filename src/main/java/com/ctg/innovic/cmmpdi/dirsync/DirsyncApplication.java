@@ -42,11 +42,23 @@ public class DirsyncApplication {
 
 		try {
 			_processService.initCMMPCache();
+
+			_processService.initCMMPDICache();
+
+//			_processService.ini
+
+			_processService.processContactInputData();
+
+//			_processService.processGroupInputData();
 		}
 //		catch (DirSyncApplicationException e) {
 //			e.printStackTrace();
 //		}
 		catch (IOException e) {
+			e.printStackTrace();
+		} catch (InvalidNameException e) {
+			e.printStackTrace();
+		} catch (DirSyncApplicationException e) {
 			e.printStackTrace();
 		}
 //		catch (InvalidNameException e) {

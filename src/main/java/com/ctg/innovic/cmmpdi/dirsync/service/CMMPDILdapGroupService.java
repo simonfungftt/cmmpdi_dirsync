@@ -5,6 +5,7 @@ import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.exception.DirSyncApplicationException;
 import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
+import com.ctg.innovic.cmmpdi.dirsync.utils.ListCompare;
 import com.ctg.innovic.cmmpdi.dirsync.utils.LogUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -40,18 +41,21 @@ public class CMMPDILdapGroupService {
     @Autowired
     private CMMPDILdapQueryService cmmpdiLdapQueryService;
 
-    public boolean createOrUpdateCMMPDIUser(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws InvalidNameException {
+    public boolean createOrUpdateCMMPDIGroup(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws InvalidNameException {
 
         boolean _result = false;
 
-        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        logger.debug(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
         // Determine create or update case
         CMMPDILdapUser _user = this.CMMPDILdapCacheService.getCMMPDIUserDnBySMTP(pCMMPExchangeLdapGroup.getMail());
         CMMPDILdapGroup _group = this.CMMPDILdapCacheService.getCMMPDIGroupDnBySMTP(pCMMPExchangeLdapGroup.getMail());
 
         if ( _user == null && _group == null ) {
-            // Create case
+
+            logger.info("Going to create group " + pCMMPExchangeLdapGroup.getDn()
+                    + "with SMTP address " + pCMMPExchangeLdapGroup.getMail());
+
             _result = this.createCMMPDIGroup(pCMMPExchangeLdapGroup);
         }
         else if ( _user == null && _group != null ) {
@@ -66,8 +70,9 @@ public class CMMPDILdapGroupService {
 
             _result = this.createCMMPDIGroup(pCMMPExchangeLdapGroup);
         }
-        else {
+        else if ( _group != null ) {
             // Update case
+            this.updateGroupAttributes(pCMMPExchangeLdapGroup, _group);
             _result = this.updateGroupMembership(pCMMPExchangeLdapGroup.getMail(), pCMMPExchangeLdapGroup.getMemberDNs());
         }
 
@@ -77,36 +82,36 @@ public class CMMPDILdapGroupService {
     }
 
 
-    public boolean syncGroupFromCMMP2DI(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws DirSyncApplicationException {
-
-        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
-
-        String _targetEmail = StringUtils.trimToNull( pCMMPExchangeLdapGroup.getMail() );
-
-        if ( _targetEmail == null ) {
-            throw new DirSyncApplicationException("[DIREX] Unexpected SMTP address is null");
-        }
-
-        // Check if the DN exists in memory
-//        String _dn = this.CMMPDILdapCacheService.getCMMPDIDnBySMTP( _targetEmail );
-
-        if ( this.CMMPDILdapCacheService.getCMMPDIGroupDnBySMTP( _targetEmail ) != null ) {
-
-            // Update group
-        }
-        else if ( this.CMMPDILdapCacheService.getCMMPDIUserDnBySMTP( _targetEmail ) != null ) {
-
-            // remove user (only if not CMMPDI mailbox)
-            // then create it
-        }
-        else {
-
-            // Does not exists, create it
-        }
-
-//        return null;
-        return false;
-    }
+//    public boolean syncGroupFromCMMP2DI(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws DirSyncApplicationException {
+//
+//        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+//
+//        String _targetEmail = StringUtils.trimToNull( pCMMPExchangeLdapGroup.getMail() );
+//
+//        if ( _targetEmail == null ) {
+//            throw new DirSyncApplicationException("[DIREX] Unexpected SMTP address is null");
+//        }
+//
+//        // Check if the DN exists in memory
+////        String _dn = this.CMMPDILdapCacheService.getCMMPDIDnBySMTP( _targetEmail );
+//
+//        if ( this.CMMPDILdapCacheService.getCMMPDIGroupDnBySMTP( _targetEmail ) != null ) {
+//
+//            // Update group
+//        }
+//        else if ( this.CMMPDILdapCacheService.getCMMPDIUserDnBySMTP( _targetEmail ) != null ) {
+//
+//            // remove user (only if not CMMPDI mailbox)
+//            // then create it
+//        }
+//        else {
+//
+//            // Does not exists, create it
+//        }
+//
+////        return null;
+//        return false;
+//    }
 
 
     private List<String> convertMembershipListFromCMMP(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws DirSyncApplicationException {
@@ -116,17 +121,6 @@ public class CMMPDILdapGroupService {
         // Assume this is DN from source system
         // A transformation is required to convert DN into SMTP address
         for ( String _eachMember : pCMMPExchangeLdapGroup.getMemberDNs() ) {
-
-            /*
-            String _email = this.CMMPDILdapCacheService.translateCMMPDnIntoSMTP(_eachMember);
-
-            if ( _email != null ) {
-                _memberSmtpList.add(_email);
-            }
-            else {
-                throw new DirSyncApplicationException("[" + Constants.ERRORCODE_PREFIX + "004] cannot find SMTP address from DN '" + _eachMember + "'");
-            }
-            */
             _memberSmtpList.add(_eachMember);
         }
 
@@ -182,7 +176,7 @@ public class CMMPDILdapGroupService {
 
         CMMPDILdapGroup _cmmpdiLdapGroup = new CMMPDILdapGroup();
 
-        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        logger.debug(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
         LdapNameBuilder builder = LdapNameBuilder.newInstance(Constants.BASE_OU_WO_STARTING_COMMAND);
 
@@ -217,7 +211,7 @@ public class CMMPDILdapGroupService {
             context.addAttributeValue("member", _memberArray[ i ]);
         }
 
-        logger.debug("context = " + context);
+        logger.info("context = " + context);
 
         return true;
     }
@@ -316,7 +310,7 @@ public class CMMPDILdapGroupService {
      */
     private boolean updateGroupAttributes(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup, CMMPDILdapGroup pCMMPDILdapGroup) {
 
-        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        logger.trace("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
         Name dn = LdapNameBuilder.newInstance(pCMMPDILdapGroup.getDn()).build();
 
@@ -324,14 +318,35 @@ public class CMMPDILdapGroupService {
 
         List<ModificationItem> _list = new ArrayList<>();
 
-        if ( CollectionUtils.isEmpty(_list) == false ) {
-
-            // Handling for member
-//            Set<Member> _membersFromCMMP = pCMMPExchangeLdapGroup.get
-
+        if ( StringUtils.trimToEmpty( pCMMPExchangeLdapGroup.getCn() ).equals( pCMMPDILdapGroup.getGroupName() ) == false ) {
+            _list.add(
+                    new ModificationItem(
+                            DirContext.REPLACE_ATTRIBUTE,
+                            new BasicAttribute("cn", pCMMPExchangeLdapGroup.getCn())
+                    )
+            );
         }
-        else {
 
+        if (ListCompare.equalsIgnoreOrder( pCMMPExchangeLdapGroup.getProxyAddresses(), pCMMPDILdapGroup.getProxyAddresses() ) == false ) {
+            _list.add(
+                    new ModificationItem(
+                            DirContext.REPLACE_ATTRIBUTE,
+                            new BasicAttribute("proxyAddresses", pCMMPExchangeLdapGroup.getProxyAddresses())
+                    )
+            );
+        }
+
+        if ( !CollectionUtils.isEmpty(_list) ) {
+
+            ModificationItem[] _mods = new ModificationItem[ _list.size() ];
+
+            for ( int i = 0; i < _list.size(); i++ ) {
+                _mods[i] = _list.get(i);
+                logger.info(_mods[i].toString());
+            }
+
+            // Execute modification
+            ldapTemplate.modifyAttributes(dn, _mods);
         }
 
         return true;

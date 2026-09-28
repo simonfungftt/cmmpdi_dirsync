@@ -1,13 +1,9 @@
 package com.ctg.innovic.cmmpdi.dirsync.dto;
 
 import lombok.Data;
-import org.springframework.ldap.odm.annotations.Attribute;
 
-import javax.naming.Name;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Data
 public class CMMPExchangeLdapGroup {
@@ -52,6 +48,10 @@ public class CMMPExchangeLdapGroup {
 
     public String getDescription() {
         return description;
+    }
+
+    public List<String> getProxyAddresses() {
+        return proxyAddresses;
     }
 
     public String getCn() {

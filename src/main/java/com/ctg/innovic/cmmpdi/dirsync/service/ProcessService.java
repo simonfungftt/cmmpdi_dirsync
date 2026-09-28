@@ -1,5 +1,6 @@
 package com.ctg.innovic.cmmpdi.dirsync.service;
 
+import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeContainer;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapUser;
@@ -55,11 +56,16 @@ public class ProcessService {
     private CMMPLdifReaderService cmmpLdifReaderService;
 
     @Autowired
-    private CMMPDILdapQueryService ldapQueryService;
+    private CMMPDILdapQueryService cmmpdiLdapQueryService;
+
+    @Autowired
+    private CMMPDILdapCacheService cmmpdiLdapCacheService;
 
     @Autowired
     private CMMPDILdapUserService cmmpdiLdapUserService;
 
+    @Autowired
+    private CMMPDILdapGroupService cmmpdiLdapGroupService;
 
     public void initCMMPCache() throws IOException {
 
@@ -69,27 +75,34 @@ public class ProcessService {
 
         for ( CMMPExchangeLdapUser _user : _userContainer.getUsers() ) {
             cmmpCacheService.addCache( _user.getDn(), _user.getMail() );
+
+            if ( _user.getMail().equals("cs6admin@uat.cmmp.gov.hk") ) {
+                Gson gson = new GsonBuilder()
+                        .disableHtmlEscaping()
+                        .setPrettyPrinting()
+                        .create();
+//                logger.info( gson.toJson(_user) );
+            }
         }
 
         CMMPExchangeContainer _groupContainer = cmmpLdifReaderService.parseLdifFile(pathOfAllGroupFilePath);
 
+        logger.info( _groupContainer.getGroups().size() + " groups had been initialised from all contacts file.");
+
         for ( CMMPExchangeLdapGroup group : _groupContainer.getGroups() ) {
             cmmpCacheService.addCache( group.getDn(), group.getMail() );
-
-            Gson gson = new GsonBuilder()
-                    .disableHtmlEscaping()
-                    .setPrettyPrinting()
-                    .create();
-
-            logger.debug( gson.toJson(group) );
         }
-
-        logger.info( _groupContainer.getGroups().size() + " groups had been initialised from all contacts file.");
 
         _userContainer = null;
         _groupContainer = null;
 
         System.gc();
+    }
+
+
+    public void initCMMPDICache() throws IOException {
+
+        this.cmmpdiLdapCacheService.initCMMPDI();
     }
 
     public void processGroupInputData() throws DirSyncApplicationException, IOException, InvalidNameException {
@@ -108,15 +121,13 @@ public class ProcessService {
                         .disableHtmlEscaping()
                         .setPrettyPrinting()
                         .create();
-
-//                for (CMMPDILdapGroup _exUser : _container.getUsers() ) {
-//                    logger.debug( gson.toJson(_exUser) );
-//
-//                    this.cmmpdiLdapUserService.createOrUpdateCMMPDIUser(_exUser);
-//                }
             }
 
-            moveProcessedFileToDest(_file, new File(this.groupProcessedFilePathDirectory + "/" + _file.getName()));
+            for (CMMPExchangeLdapGroup _group : _container.getGroups() ) {
+                this.cmmpdiLdapGroupService.createOrUpdateCMMPDIGroup(_group);
+            }
+
+//            moveProcessedFileToDest(_file, new File(this.groupProcessedFilePathDirectory + "/" + _file.getName()));
         }
     }
 
@@ -131,7 +142,8 @@ public class ProcessService {
 
             CMMPExchangeContainer _container = this.importFileIntoMemory( _file );
 
-            if ( logger.isDebugEnabled() ) {
+            int _processUserCount = 1;
+
 
                 Gson gson = new GsonBuilder()
 					.disableHtmlEscaping()
@@ -139,13 +151,21 @@ public class ProcessService {
 					.create();
 
 			    for (CMMPExchangeLdapUser _exUser : _container.getUsers() ) {
-				    logger.debug( gson.toJson(_exUser) );
+//				    logger.debug( gson.toJson(_exUser) );
 
-                    this.cmmpdiLdapUserService.createOrUpdateCMMPDIUser(_exUser);
+                    if ( _exUser.getMail().equalsIgnoreCase("ltkwokub@uatbdoa.gov.hk") ) {
+                        this.cmmpdiLdapUserService.createOrUpdateCMMPDIUser(_exUser);
+                    }
+
+                    if ( _processUserCount % 100 == 0 )
+                        logger.info("Process user count: " + _processUserCount);
+
+                    _processUserCount++;
 			    }
-            }
 
-            moveProcessedFileToDest(_file, new File(this.contactProcessedFilePathDirectory + "/" + _file.getName()));
+            logger.info("Process user count: " + _processUserCount);
+
+//            moveProcessedFileToDest(_file, new File(this.contactProcessedFilePathDirectory + "/" + _file.getName()));
         }
     }
 
@@ -193,13 +213,13 @@ public class ProcessService {
 
         int _processedFileCount = 0;
 
-		while ( _processedFileCount < 10 ) {
+		//while ( _processedFileCount < 10 ) {
 
 			File _nextFileToProcess = this.readNextInputLdifFile(pScanningFolder);
 
             if ( _nextFileToProcess == null ) {
                 logger.info("No pending file is found in path '" + pScanningFolder + "'");
-                break;
+                //break;
             }
             else {
                 logger.info("Located file '" + _nextFileToProcess.getAbsolutePath() + "'");
@@ -208,7 +228,7 @@ public class ProcessService {
             }
 
 			_processedFileCount++;
-		}
+		//}
 
         return _contactInputFile;
     }
@@ -281,6 +301,7 @@ public class ProcessService {
 			container = cmmpLdifReaderService.parseLdifFile(pInputFile.getAbsolutePath());
 
 			logger.info("Loaded Users: " + container.getUsers().size());
+            logger.info("Loaded Groups: " + container.getGroups().size());
 
             if ( logger.isTraceEnabled() ) {
 

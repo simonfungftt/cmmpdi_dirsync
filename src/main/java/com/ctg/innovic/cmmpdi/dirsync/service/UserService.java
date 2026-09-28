@@ -1,13 +1,11 @@
 package com.ctg.innovic.cmmpdi.dirsync.service;
 
-import com.ctg.innovic.cmmpdi.dirsync.ApplicationConfig;
 import com.ctg.innovic.cmmpdi.dirsync.dto.Person;
 import com.ctg.innovic.cmmpdi.dirsync.mapper.UserAttributeMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.support.LdapNameBuilder;
@@ -66,7 +64,9 @@ public class UserService {
                             });
             dirContext.setAttributeValue("cn", _localPart);
 
-            logger.info("Trying to bind to LDAP with DN " + dn.toString() + " cn = " + _localPart);
+            if ( logger.isInfoEnabled() ) {
+                logger.info(String.format("Trying to bind to LDAP with DN '%s' and cn = '%s'", dn.toString(), _localPart));
+            }
 
             LdapTemplate _ldapTemplate = context.getBean(LdapTemplate.class);
             _ldapTemplate.bind(dirContext);

@@ -3,12 +3,14 @@ package com.ctg.innovic.cmmpdi.dirsync.service;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
+import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
 import com.ctg.innovic.cmmpdi.dirsync.utils.LogUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.query.LdapQueryBuilder;
@@ -25,14 +27,8 @@ public class CMMPDILdapQueryService {
 
     private static Logger logger = LogManager.getLogger(CMMPDILdapQueryService.class);
 
-    //private final ApplicationContext context;
-
     @Autowired
     private LdapTemplate ldapTemplate;
-
-//    @Autowired
-//    private CMMPDILdapCacheService CMMPDILdapCacheService;
-
 
     /**
      * LDAP query all user objects from CMMP-DI
@@ -40,10 +36,30 @@ public class CMMPDILdapQueryService {
      */
     public List<CMMPDILdapUser> listCMMPDIUsers() {
 
-        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
         List<CMMPDILdapUser> _result = ldapTemplate.find(
                 LdapQueryBuilder.query()
+                        .base(Constants.LDAP_BASE_OU_BDO)
+                        .where("objectClass").is("inetOrgPerson"),
+                CMMPDILdapUser.class
+        );
+
+        return _result;
+    }
+
+
+    /**
+     * LDAP query all user objects from CMMP-DI
+     * @return
+     */
+    public List<CMMPDILdapUser> listCMMPDIWGDUsers() {
+
+        logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+
+        List<CMMPDILdapUser> _result = ldapTemplate.find(
+                LdapQueryBuilder.query()
+                        .base(Constants.LDAP_BASE_OU_WGD)
                         .where("objectClass").is("inetOrgPerson"),
                 CMMPDILdapUser.class
         );
@@ -58,10 +74,11 @@ public class CMMPDILdapQueryService {
      */
     public List<CMMPDILdapGroup> listCMMPDIGroups() {
 
-        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
         List<CMMPDILdapGroup> _result = ldapTemplate.find(
                 LdapQueryBuilder.query()
+                        .base(Constants.LDAP_BASE_OU_BDO)
                         .where("objectClass").is("group"),
                 CMMPDILdapGroup.class
         );
@@ -70,9 +87,24 @@ public class CMMPDILdapQueryService {
     }
 
 
-    public CMMPDILdapUser findOneCMMPDIUserByEmail(String email) {
+    public List<CMMPDILdapGroup> listCMMPDIWGDGroups() {
 
-        logger.debug("Entering " + LogUtils.getCurrentMethodName() + " with search condition mail: '" + email + "'");
+        logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+
+        List<CMMPDILdapGroup> _result = ldapTemplate.find(
+                LdapQueryBuilder.query()
+                        .base(Constants.LDAP_BASE_OU_WGD)
+                        .where("objectClass").is("group"),
+                CMMPDILdapGroup.class
+        );
+
+        return _result;
+    }
+
+
+    public CMMPDILdapUser findOneCMMPDIUserByEmail(@NotNull String email) {
+
+        logger.trace("Entering " + LogUtils.getCurrentMethodName() + " with search condition mail: '" + email + "'");
 
         List<CMMPDILdapUser> _users = this.findUsersByEmail(email);
 
@@ -88,22 +120,44 @@ public class CMMPDILdapQueryService {
 
     public List<CMMPDILdapUser> findUsersByEmail(String email) {
 
+        int _retryCnt = 0;
+
+        while (_retryCnt < 3) {
+
+            try {
+                return findUsersByEmailInternal(email);
+            }
+            catch (org.springframework.ldap.CommunicationException ce) {
+                _retryCnt++;
+            }
+        }
+
+        return null;
+    }
+
+
+
+    private List<CMMPDILdapUser> findUsersByEmailInternal(String email) {
+
         logger.debug("Entering " + LogUtils.getCurrentMethodName() + " with search condition mail: '" + email + "'");
 
         List<CMMPDILdapUser> _result = ldapTemplate.find(
-                LdapQueryBuilder.query()
-                        .where("objectClass").is("inetOrgPerson").and("mail").is(email),
-                CMMPDILdapUser.class
-        );
+            LdapQueryBuilder.query()
+                    .base(Constants.LDAP_BASE_OU_BDO)
+                    .where("objectClass").is("inetOrgPerson").and("mail").is(email),
+                    CMMPDILdapUser.class
+            );
 
-        if ( logger.isDebugEnabled() ) {
+        if ( logger.isTraceEnabled() ) {
+
             Gson gson = new GsonBuilder()
-                    .disableHtmlEscaping()
-                    .setPrettyPrinting() // Optional: formats output nicely
-                    .create();
+                .disableHtmlEscaping()
+                .setPrettyPrinting() // Optional: formats output nicely
+                .create();
+
             for ( CMMPDILdapUser _user : _result ) {
-                logger.debug( "DN = " + _user.getDn().toString() );
-                logger.debug( gson.toJson(_user) );
+                logger.trace( "DN = " + _user.getDn().toString() );
+                logger.trace( gson.toJson(_user) );
             }
         }
 
@@ -111,7 +165,27 @@ public class CMMPDILdapQueryService {
     }
 
 
+
     public CMMPDILdapGroup findOneCMMPDIGroupByEmail(String email) {
+
+        int _retryCnt = 0;
+
+        while (_retryCnt < 3) {
+
+            try {
+                return findOneCMMPDIGroupByEmailInternal(email);
+            }
+            catch (org.springframework.ldap.CommunicationException ce) {
+                _retryCnt++;
+            }
+        }
+
+        return null;
+    }
+
+
+
+    private CMMPDILdapGroup findOneCMMPDIGroupByEmailInternal(String email) {
 
         logger.debug("Entering " + LogUtils.getCurrentMethodName() + " with search condition mail: '" + email + "'");
 

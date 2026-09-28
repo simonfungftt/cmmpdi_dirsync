@@ -4,10 +4,12 @@ import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeContainer;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeOrganizationalUnit;
+import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
 import com.ctg.innovic.cmmpdi.dirsync.utils.LdifCleaner;
 import com.unboundid.ldap.sdk.Attribute;
 import com.unboundid.ldap.sdk.Entry;
 import com.unboundid.ldif.LDIFReader;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -84,17 +87,25 @@ public class CMMPLdifReaderService {
                     boolean isOu = objectClasses != null && Arrays.asList(objectClasses).contains("organizationalUnit");
 
                     if (isUser) {
-                        logger.debug("Scanned " + _userCount++ + " users");
-                        container.getUsers().add(mapToUser(entry));
-                    } else if (isGroup) {
-                        logger.debug("Scanned " + _groupCount++ + " groups");
-                        container.getGroups().add(mapToGroup(entry));
-                    } else if (isOu) {
+                        CMMPExchangeLdapUser _user = mapToUser(entry);
+
+                        if ( _user != null ) {
+                            container.getUsers().add(_user);
+                        }
+                    }
+                    else if (isGroup) {
+                        CMMPExchangeLdapGroup _group = mapToGroup(entry);
+
+                        if ( _group != null ) {
+                            container.getGroups().add(_group);
+                        }
+                    }
+                    else if (isOu) {
                         container.getOrganizationalUnits().add(mapToOu(entry));
                     }
                 }
                 catch (Exception e) {
-                    logger.error("Exception in parseLdif, " + e.getMessage());
+//                    logger.error("Exception in parseLdif, " + e.getMessage());
                 }
             }
 
@@ -128,15 +139,23 @@ public class CMMPLdifReaderService {
 //            logger.debug(_each.getName() + " " + _each.getValue());
 //        }
 
+        if ( entry.getAttributeValue("mail") == null ) {
+            return null;
+        }
+
         CMMPExchangeLdapUser user = new CMMPExchangeLdapUser();
-        user.setDn(entry.getDN());
+
+        String _dn = entry.getDN();
+        _dn.replaceAll(Constants.CMMP_OU_TO_REPLACE_WITH, Constants.BASE_OU_WO_STARTING_COMMAND);
+        user.setDn(_dn);
+
         user.setCn(entry.getAttributeValue("cn"));
         user.setSn(entry.getAttributeValue("sn"));
         user.setGivenName(entry.getAttributeValue("givenName"));
         user.setTitle(entry.getAttributeValue("title"));
         user.setDisplayName(entry.getAttributeValue("displayName"));
 //        user.setSAMAccountName(entry.getAttributeValue("sAMAccountName"));
-        user.setMail(entry.getAttributeValue("mail"));
+        user.setMail( StringUtils.lowerCase(entry.getAttributeValue("mail")));
         user.setCountryCode(Integer.valueOf(entry.getAttributeValue("countryCode")));
 //        user.setUserAccountControl(entry.getAttributeValue("userAccountControl"));
 //        user.setPwdLastSet(entry.getAttributeValue("pwdLastSet"));
@@ -145,7 +164,8 @@ public class CMMPLdifReaderService {
 //        user.setObjectGUID(getBytes(entry, "objectGUID"));
 //        user.setObjectSid(getBytes(entry, "objectSid"));
 //        user.setUserPassword(getBytes(entry, "userPassword"));
-//        user.setUserCert17(getBytes(entry, "userCert17"));
+        user.setUserCertificate(getBytes(entry, "userCertificate"));
+        user.setUserSMIMECertificate(getBytes(entry, "userSMIMECertificate"));
 //        user.setUserCert18(getBytes(entry, "userCert18"));
 
         // Multi-valued fields
@@ -163,12 +183,16 @@ public class CMMPLdifReaderService {
 //            logger.debug(_each.getName() + " " + _each.getValue());
 //        }
 
+        if ( entry.getAttributeValue("mail") == null ) {
+            return null;
+        }
+
         CMMPExchangeLdapGroup group = new CMMPExchangeLdapGroup();
 
         group.setDn(entry.getDN());
         group.setCn(entry.getAttributeValue("cn"));
         group.setDisplayName(entry.getAttributeValue("displayName"));
-        group.setMail(entry.getAttributeValue("mail"));
+        group.setMail(StringUtils.lowerCase(entry.getAttributeValue("mail")));
 
         if ( entry.getAttributeValue("extensionAttribute1") != null )
             group.setExtensionAttribute1(Integer.valueOf(entry.getAttributeValue("extensionAttribute1")));
@@ -186,6 +210,22 @@ public class CMMPLdifReaderService {
             for ( String _member : Arrays.asList(memberAttr.getValues())) {
                 if ( this.cmmpCacheService.lookupSmtpByCMMPDN( _member) != null ) {
                     group.getMemberDNs().add(this.cmmpCacheService.lookupSmtpByCMMPDN(_member));
+                }
+            }
+        }
+
+        Attribute proxyAddressesAttr = entry.getAttribute("proxyAddresses");
+        if (proxyAddressesAttr != null) {
+
+            for ( String _proxyAddress : Arrays.asList(proxyAddressesAttr.getValues())) {
+
+                if ( _proxyAddress != null && _proxyAddress.contains(":") ) {
+
+                    String[] _buffer = _proxyAddress.split(":", 2); // Split into 2 parts maximum
+                    String _first = _buffer[0];                    // "SMTP"
+                    String _second = _buffer[1].toLowerCase();     // "john.doe@example.com"
+
+                    group.getProxyAddresses().add(_first + ": " + _second);
                 }
             }
         }

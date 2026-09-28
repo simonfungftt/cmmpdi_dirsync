@@ -7,7 +7,9 @@ import org.springframework.ldap.odm.annotations.Entry;
 import org.springframework.ldap.odm.annotations.Id;
 import javax.naming.Name;
 import javax.naming.ldap.LdapName;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 // Maps to group objectClasses under the ou=Groups tree
@@ -34,6 +36,8 @@ public final class CMMPDILdapGroup {
     @Attribute(name = "member")
     private Set<Name> members = new HashSet<>();
 
+    @Attribute(name = "proxyAddresses")
+    private List<String> proxyAddresses = new ArrayList<>();
 
     public LdapName getRealDn() {
         return dn;
@@ -58,6 +62,10 @@ public final class CMMPDILdapGroup {
 
     public String getDistinguishedName() {
         return distinguishedName;
+    }
+
+    public List<String> getProxyAddresses() {
+        return proxyAddresses;
     }
 
     // Helper methods for managing group membership

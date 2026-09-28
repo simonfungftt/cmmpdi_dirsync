@@ -8,6 +8,7 @@ import org.springframework.ldap.odm.annotations.Entry;
 import org.springframework.ldap.odm.annotations.Id;
 
 import javax.naming.ldap.LdapName;
+import java.util.Comparator;
 
 // Map to standard LDAP objectClasses (e.g. inetOrgPerson or user)
 @Entry(objectClasses = {"top", "person", "organizationalPerson", "inetOrgPerson"}, base = "ou=Users")
@@ -48,6 +49,9 @@ public final class CMMPDILdapUser {
     @Attribute(name = "extensionAttribute1")
     private int extensionAttribute1;
 
+    @Attribute(name = "extensionAttribute7")
+    private int extensionAttribute7;
+
 
     private String bdCode;
 
@@ -56,10 +60,11 @@ public final class CMMPDILdapUser {
         if ( this.extensionAttribute3 >= 4 ) {
             return true;
         }
-        else {
-            return false;
-        }
+
+        return false;
     }
+
+    public static final Comparator<CMMPDILdapUser> BY_EMAIL = Comparator.comparing(CMMPDILdapUser::getEmail);
 
 
     /**
@@ -91,7 +96,6 @@ public final class CMMPDILdapUser {
     }
 
     // Getters and Setters
-//    public LdapName getDn() { return dn; }
     public void setDn(LdapName dn) { this.dn = dn; }
 
     public String getCommonName() { return commonName; }
@@ -104,13 +108,16 @@ public final class CMMPDILdapUser {
         return displayName;
     }
 
-//    get
+
+    public void setDistinguishedName(String distinguishedName) {
+        this.distinguishedName = distinguishedName;
+    }
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
     }
 
     public int getExtensionAttribute1() {
-        return extensionAttribute1;
+        return this.extensionAttribute1;
     }
 }
