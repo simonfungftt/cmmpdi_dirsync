@@ -1,10 +1,9 @@
 package com.ctg.innovic.cmmpdi.dirsync;
 
-import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapGroup;
-import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.exception.DirSyncApplicationException;
-import com.ctg.innovic.cmmpdi.dirsync.service.*;
+import com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapGroupService;
+import com.ctg.innovic.cmmpdi.dirsync.service.ProcessService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.boot.Banner;
@@ -45,21 +44,17 @@ public class DirsyncApplication {
 
 			_processService.initCMMPDICache();
 
-//			_processService.ini
-
 			_processService.processContactInputData();
 
 //			_processService.processGroupInputData();
 		}
-//		catch (DirSyncApplicationException e) {
-//			e.printStackTrace();
-//		}
+
 		catch (IOException e) {
-			e.printStackTrace();
+		//	e.printStackTrace();
 		} catch (InvalidNameException e) {
-			e.printStackTrace();
+		//	e.printStackTrace();
 		} catch (DirSyncApplicationException e) {
-			e.printStackTrace();
+		//	e.printStackTrace();
 		}
 //		catch (InvalidNameException e) {
 //			e.printStackTrace();

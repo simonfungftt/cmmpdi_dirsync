@@ -67,6 +67,11 @@ public class ProcessService {
     @Autowired
     private CMMPDILdapGroupService cmmpdiLdapGroupService;
 
+    /**
+     * To effective resolve membership (original in CN form), need all the CN of users to build up members
+     *
+     * @throws IOException
+     */
     public void initCMMPCache() throws IOException {
 
         CMMPExchangeContainer _userContainer = cmmpLdifReaderService.parseLdifFile(pathOfAllUserFilePath);
@@ -75,14 +80,6 @@ public class ProcessService {
 
         for ( CMMPExchangeLdapUser _user : _userContainer.getUsers() ) {
             cmmpCacheService.addCache( _user.getDn(), _user.getMail() );
-
-            if ( _user.getMail().equals("cs6admin@uat.cmmp.gov.hk") ) {
-                Gson gson = new GsonBuilder()
-                        .disableHtmlEscaping()
-                        .setPrettyPrinting()
-                        .create();
-//                logger.info( gson.toJson(_user) );
-            }
         }
 
         CMMPExchangeContainer _groupContainer = cmmpLdifReaderService.parseLdifFile(pathOfAllGroupFilePath);
@@ -92,17 +89,13 @@ public class ProcessService {
         for ( CMMPExchangeLdapGroup group : _groupContainer.getGroups() ) {
             cmmpCacheService.addCache( group.getDn(), group.getMail() );
         }
-
-        _userContainer = null;
-        _groupContainer = null;
-
-        System.gc();
     }
 
 
     public void initCMMPDICache() throws IOException {
 
         this.cmmpdiLdapCacheService.initCMMPDI();
+        this.cmmpdiLdapCacheService.initCMMPDIWGD();
     }
 
     public void processGroupInputData() throws DirSyncApplicationException, IOException, InvalidNameException {
@@ -134,38 +127,36 @@ public class ProcessService {
 
     public void processContactInputData() throws DirSyncApplicationException, IOException, InvalidNameException {
 
+        // Fetch files to be processed from input file path
         List<File> _files =  fetchInputDataFromFolder(this.contactInputFileDirectory);
 
+        // For each file
         for ( File _file : _files ) {
 
             logger.info("Processing CMMP contact info data file '" + _file.getAbsolutePath() + "'");
 
+            // Parse the input file
             CMMPExchangeContainer _container = this.importFileIntoMemory( _file );
 
             int _processUserCount = 1;
 
 
-                Gson gson = new GsonBuilder()
-					.disableHtmlEscaping()
-					.setPrettyPrinting()
-					.create();
+            for (CMMPExchangeLdapUser _exUser : _container.getUsers() ) {
 
-			    for (CMMPExchangeLdapUser _exUser : _container.getUsers() ) {
-//				    logger.debug( gson.toJson(_exUser) );
+                // Testing code
+                if ( _exUser.getMail().equalsIgnoreCase("ltkwokub@uatbdoa.gov.hk") ) {
+                    this.cmmpdiLdapUserService.createOrUpdateCMMPDIUser(_exUser);
+                }
 
-                    if ( _exUser.getMail().equalsIgnoreCase("ltkwokub@uatbdoa.gov.hk") ) {
-                        this.cmmpdiLdapUserService.createOrUpdateCMMPDIUser(_exUser);
-                    }
+                if ( _processUserCount % 100 == 0 )
+                    logger.info("Process user count: " + _processUserCount);
 
-                    if ( _processUserCount % 100 == 0 )
-                        logger.info("Process user count: " + _processUserCount);
-
-                    _processUserCount++;
-			    }
+                _processUserCount++;
+            }
 
             logger.info("Process user count: " + _processUserCount);
 
-//            moveProcessedFileToDest(_file, new File(this.contactProcessedFilePathDirectory + "/" + _file.getName()));
+            moveProcessedFileToDest(_file, new File(this.contactProcessedFilePathDirectory + "/" + _file.getName()));
         }
     }
 
