@@ -1,0 +1,60 @@
+2026-09-15 00:00:40.963 INFO  DirsyncApplication:31 - Starting CMMP-DI DirSync Application...
+2026-09-15 00:00:41.379 INFO  DirsyncApplication:54 - Starting DirsyncApplication using Java 25.0.2 with PID 48284 (C:\Users\simon\IdeaProjects\dirsync\target\classes started by simon in C:\Users\simon\IdeaProjects\dirsync)
+2026-09-15 00:00:41.380 DEBUG DirsyncApplication:55 - Running with Spring Boot v4.0.2, Spring v7.0.3
+2026-09-15 00:00:41.381 INFO  DirsyncApplication:652 - No active profile set, falling back to 1 default profile: "default"
+2026-09-15 00:00:41.699 INFO  RepositoryConfigurationDelegate:145 - Bootstrapping Spring Data LDAP repositories in DEFAULT mode.
+2026-09-15 00:00:41.714 INFO  RepositoryConfigurationDelegate:213 - Finished Spring Data repository scanning in 6 ms. Found 0 LDAP repository interfaces.
+2026-09-15 00:00:41.810 INFO  RepositoryConfigurationDelegate:145 - Bootstrapping Spring Data LDAP repositories in DEFAULT mode.
+2026-09-15 00:00:41.827 INFO  RepositoryConfigurationDelegate:213 - Finished Spring Data repository scanning in 15 ms. Found 0 LDAP repository interfaces.
+2026-09-15 00:00:42.093 INFO  AbstractContextSource:419 - Property 'userDn' not set - anonymous context will be used for read-only operations
+2026-09-15 00:00:42.118 INFO  DirsyncApplication:60 - Started DirsyncApplication in 1.058 seconds (process running for 1.88)
+2026-09-15 00:00:42.220 INFO  RepositoryConfigurationDelegate:145 - Bootstrapping Spring Data LDAP repositories in DEFAULT mode.
+2026-09-15 00:00:42.224 INFO  RepositoryConfigurationDelegate:213 - Finished Spring Data repository scanning in 2 ms. Found 0 LDAP repository interfaces.
+2026-09-15 00:00:42.243 INFO  RepositoryConfigurationDelegate:145 - Bootstrapping Spring Data LDAP repositories in DEFAULT mode.
+2026-09-15 00:00:42.251 INFO  RepositoryConfigurationDelegate:213 - Finished Spring Data repository scanning in 6 ms. Found 0 LDAP repository interfaces.
+2026-09-15 00:00:42.293 INFO  AbstractContextSource:419 - Property 'userDn' not set - anonymous context will be used for read-only operations
+2026-09-15 00:00:42.304 DEBUG LdapCacheService:50 - Entering com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapCacheService.initCMMPDI
+2026-09-15 00:00:42.304 INFO  LdapCacheService:52 - Initialising CMMP-DI users...
+2026-09-15 00:00:42.305 DEBUG CMMPDILdapQueryService:50 - Entering com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapQueryService.listUsers
+2026-09-15 00:00:57.043 INFO  LdapCacheService:65 - 10276 user entries had been initialised...
+2026-09-15 00:00:57.044 INFO  LdapCacheService:67 - Initialising CMMP-DI groups...
+2026-09-15 00:00:57.044 DEBUG CMMPDILdapQueryService:68 - Entering com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapQueryService.listGroups
+2026-09-15 00:00:59.575 INFO  LdapCacheService:77 - 10033 group entries had been initialised...
+2026-09-15 00:00:59.575 DEBUG DirsyncApplication:138 - CN=a1chanchansitcmmpdi,OU=User,OU=SITCHAN,OU=BDO,OU=CMMPDI-BDOs
+2026-09-15 00:00:59.575 DEBUG CMMPDILdapGroupService:86 - Entering com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapUserService.createCMMPDIUser
+2026-09-15 00:00:59.575 DEBUG CMMPDILdapGroupService:100 - Generate DN = cn=a1chanchansitcmmpdi,ou=CMMPDI-BDOs,ou=BDO,ou=SITCHAN,ou=User,dc=cmmp-di-test,dc=ctg
+2026-09-15 00:00:59.575 DEBUG CMMPDILdapGroupService:126 - context = org.springframework.ldap.core.DirContextAdapter: dn=cn=a1chanchansitcmmpdi,ou=CMMPDI-BDOs,ou=BDO,ou=SITCHAN,ou=User,dc=cmmp-di-test,dc=ctg {mail=a1chan@chan.sit.cmmpdi, givenName=CHAN, instanceType=4, extensionAttribute3=0, distinguishedName=CN=a1chanchansitcmmpdi,OU=User,OU=SITCHAN,OU=BDO,OU=CMMPDI-BDOs,dc=cmmp-di-test,dc=ctg, cn=a1chanchansitcmmpdi, sn=Approver One, extensionAttribute1=0, objectClass[0]=top, objectClass[1]=person, objectClass[2]=organizationalPerson, objectClass[3]=inetOrgPerson}
+2026-09-15 00:00:59.584 DEBUG DirsyncApplication:150 - CN=a1chanchansitcmmpdi,OU=User,OU=SITCHAN,OU=BDO,OU=CMMPDI-BDOs
+2026-09-15 00:00:59.584 DEBUG CMMPDILdapGroupService:146 - Entering com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapGroupService.createCMMPDIGroup
+2026-09-15 00:00:59.584 DEBUG CMMPDILdapGroupService:160 - Generate DN = cn=uattestuatgroup00013,ou=CMMPDI-BDOs,ou=BDO,ou=UATBDOD,ou=Group,dc=cmmp-di-test,dc=ctg
+2026-09-15 00:00:59.585 DEBUG CMMPDILdapGroupService:181 - context = org.springframework.ldap.core.DirContextAdapter: dn=cn=uattestuatgroup00013,ou=CMMPDI-BDOs,ou=BDO,ou=UATBDOD,ou=Group,dc=cmmp-di-test,dc=ctg {mail=UATTestUATGroup00013@uat.cmmpdi, member=CN=UATTestUATSSOUser00013,OU=User,OU=UATBDOD,OU=BDO,OU=CMMPDI-BDOs,dc=cmmp-di-test,dc=ctg,dc=cmmp-di-test,dc=ctg, distinguishedName=CN=UATTestUATGroup00013,OU=Group,OU=UATBDOD,OU=BDO,OU=CMMPDI-BDOs,dc=cmmp-di-test,dc=ctg, cn=UATTestUATGroup00013, objectClass[0]=top, objectClass[1]=posixGroup, objectClass[2]=group}
+2026-09-15 00:01:53.239 INFO  DirsyncApplication:31 - Starting CMMP-DI DirSync Application...
+2026-09-15 00:01:53.623 INFO  DirsyncApplication:54 - Starting DirsyncApplication using Java 25.0.2 with PID 1144 (C:\Users\simon\IdeaProjects\dirsync\target\classes started by simon in C:\Users\simon\IdeaProjects\dirsync)
+2026-09-15 00:01:53.623 DEBUG DirsyncApplication:55 - Running with Spring Boot v4.0.2, Spring v7.0.3
+2026-09-15 00:01:53.624 INFO  DirsyncApplication:652 - No active profile set, falling back to 1 default profile: "default"
+2026-09-15 00:01:53.918 INFO  RepositoryConfigurationDelegate:145 - Bootstrapping Spring Data LDAP repositories in DEFAULT mode.
+2026-09-15 00:01:53.930 INFO  RepositoryConfigurationDelegate:213 - Finished Spring Data repository scanning in 5 ms. Found 0 LDAP repository interfaces.
+2026-09-15 00:01:54.019 INFO  RepositoryConfigurationDelegate:145 - Bootstrapping Spring Data LDAP repositories in DEFAULT mode.
+2026-09-15 00:01:54.036 INFO  RepositoryConfigurationDelegate:213 - Finished Spring Data repository scanning in 13 ms. Found 0 LDAP repository interfaces.
+2026-09-15 00:01:54.291 INFO  AbstractContextSource:419 - Property 'userDn' not set - anonymous context will be used for read-only operations
+2026-09-15 00:01:54.314 INFO  DirsyncApplication:60 - Started DirsyncApplication in 0.996 seconds (process running for 1.79)
+2026-09-15 00:01:54.421 INFO  RepositoryConfigurationDelegate:145 - Bootstrapping Spring Data LDAP repositories in DEFAULT mode.
+2026-09-15 00:01:54.424 INFO  RepositoryConfigurationDelegate:213 - Finished Spring Data repository scanning in 1 ms. Found 0 LDAP repository interfaces.
+2026-09-15 00:01:54.438 INFO  RepositoryConfigurationDelegate:145 - Bootstrapping Spring Data LDAP repositories in DEFAULT mode.
+2026-09-15 00:01:54.446 INFO  RepositoryConfigurationDelegate:213 - Finished Spring Data repository scanning in 6 ms. Found 0 LDAP repository interfaces.
+2026-09-15 00:01:54.485 INFO  AbstractContextSource:419 - Property 'userDn' not set - anonymous context will be used for read-only operations
+2026-09-15 00:01:54.495 DEBUG LdapCacheService:50 - Entering com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapCacheService.initCMMPDI
+2026-09-15 00:01:54.495 INFO  LdapCacheService:52 - Initialising CMMP-DI users...
+2026-09-15 00:01:54.495 DEBUG CMMPDILdapQueryService:50 - Entering com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapQueryService.listUsers
+2026-09-15 00:02:10.395 INFO  LdapCacheService:65 - 10276 user entries had been initialised...
+2026-09-15 00:02:10.396 INFO  LdapCacheService:67 - Initialising CMMP-DI groups...
+2026-09-15 00:02:10.397 DEBUG CMMPDILdapQueryService:68 - Entering com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapQueryService.listGroups
+2026-09-15 00:02:12.858 INFO  LdapCacheService:77 - 10033 group entries had been initialised...
+2026-09-15 00:02:12.871 DEBUG DirsyncApplication:138 - CN=a1chanchansitcmmpdi,OU=User,OU=SITCHAN,OU=BDO,OU=CMMPDI-BDOs
+2026-09-15 00:02:12.872 DEBUG CMMPDILdapGroupService:86 - Entering com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapUserService.createCMMPDIUser
+2026-09-15 00:02:12.872 DEBUG CMMPDILdapGroupService:100 - Generate DN = cn=a1chanchansitcmmpdi,ou=CMMPDI-BDOs,ou=BDO,ou=SITCHAN,ou=User,dc=cmmp-di-test,dc=ctg
+2026-09-15 00:02:12.873 DEBUG CMMPDILdapGroupService:126 - context = org.springframework.ldap.core.DirContextAdapter: dn=cn=a1chanchansitcmmpdi,ou=CMMPDI-BDOs,ou=BDO,ou=SITCHAN,ou=User,dc=cmmp-di-test,dc=ctg {mail=a1chan@chan.sit.cmmpdi, givenName=CHAN, instanceType=4, extensionAttribute3=0, distinguishedName=CN=a1chanchansitcmmpdi,OU=User,OU=SITCHAN,OU=BDO,OU=CMMPDI-BDOs,dc=cmmp-di-test,dc=ctg, cn=a1chanchansitcmmpdi, sn=Approver One, extensionAttribute1=0, objectClass[0]=top, objectClass[1]=person, objectClass[2]=organizationalPerson, objectClass[3]=inetOrgPerson}
+2026-09-15 00:02:12.873 DEBUG DirsyncApplication:150 - CN=a1chanchansitcmmpdi,OU=User,OU=SITCHAN,OU=BDO,OU=CMMPDI-BDOs
+2026-09-15 00:02:12.873 DEBUG CMMPDILdapGroupService:146 - Entering com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapGroupService.createCMMPDIGroup
+2026-09-15 00:02:12.874 DEBUG CMMPDILdapGroupService:160 - Generate DN = cn=uattestuatgroup00021,ou=CMMPDI-BDOs,ou=BDO,ou=UATBDOD,ou=Group,dc=cmmp-di-test,dc=ctg
+2026-09-15 00:02:12.874 DEBUG CMMPDILdapGroupService:181 - context = org.springframework.ldap.core.DirContextAdapter: dn=cn=uattestuatgroup00021,ou=CMMPDI-BDOs,ou=BDO,ou=UATBDOD,ou=Group,dc=cmmp-di-test,dc=ctg {mail=UATTestUATGroup00021@uat.cmmpdi, member[0]=CN=a1chanchansitcmmpdi,OU=User,OU=SITCHAN,OU=BDO,OU=CMMPDI-BDOs,dc=cmmp-di-test,dc=ctg,dc=cmmp-di-test,dc=ctg, member[1]=CN=revhohouatcmmpdi,OU=User,OU=UATHO,OU=BDO,OU=CMMPDI-BDOs,dc=cmmp-di-test,dc=ctg,dc=cmmp-di-test,dc=ctg, distinguishedName=CN=UATTestUATGroup00021,OU=Group,OU=UATBDOD,OU=BDO,OU=CMMPDI-BDOs,dc=cmmp-di-test,dc=ctg, cn=UATTestUATGroup00021, objectClass[0]=top, objectClass[1]=posixGroup, objectClass[2]=group}

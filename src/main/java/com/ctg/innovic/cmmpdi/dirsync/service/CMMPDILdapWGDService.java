@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.naming.InvalidNameException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -20,23 +21,13 @@ import java.util.Locale;
 @Service
 public class CMMPDILdapWGDService {
 
-    private static final Logger logger = LogManager.getLogger(CMMPDILdapWGDService.class);
+    private final static Logger logger = LogManager.getLogger(CMMPDILdapWGDService.class);
 
     @Autowired
     private CMMPDILdapCacheService cmmpdiLdapCacheService;
 
-    private List<CMMPDILdapUser> cmmpdiLdapUsers;
-
-    public static void main(String[] args) {
-
-        CMMPDILdapWGDService CMMPDILdapWGDService = new CMMPDILdapWGDService();
-        CMMPDILdapWGDService.syncToWGD();
-    }
-
-    public CMMPDILdapWGDService() {
-//        cmmpdiLdapUsers = new ArrayList<>();
-////        cmmpdiLdapUsers = this.cmmpdiLdapCacheService.
-    }
+    @Autowired
+    private CMMPDILdapUserService cmmpdiLdapUserService;
 
 
     private List<CMMPDILdapUser> getWGDUserInWGDOU(@NotNull String searchKey) {
@@ -75,24 +66,28 @@ public class CMMPDILdapWGDService {
         return _result;
     }
 
-    public void syncWGDUser(String searchKey) {
+    public void syncWGDUser(String pSearchKey) throws InvalidNameException {
+
         logger.log(Level.INFO, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
 
+        List<CMMPDILdapUser> _bdoUsers = getWGDUserInBDOOU(pSearchKey);
 
-
-        // Get current in WGD user with same smtp prefix
-        // Get suppose in WGD users wit same smtp prefix
-        List<CMMPDILdapUser> _bdoUsers = getWGDUserInBDOOU(searchKey);
-
-        List<CMMPDILdapUser> _wgdUsers = getWGDUserInBDOOU(searchKey);
-
-        List<CMMPDILdapUser> _inBDOButNotInWGD = (List<CMMPDILdapUser>) CollectionUtils.subtract(_bdoUsers, _wgdUsers);
+        List<CMMPDILdapUser> _wgdUsers = getWGDUserInBDOOU(pSearchKey);
 
         List<CMMPDILdapUser> _inWGDButNotInBDO = (List<CMMPDILdapUser>) CollectionUtils.subtract(_wgdUsers, _bdoUsers);
 
+        for ( CMMPDILdapUser wgdUser : _inWGDButNotInBDO ){
+            this.cmmpdiLdapUserService.deleteCMMPDIUser(wgdUser);
+        }
+
+        List<CMMPDILdapUser> _inBDOButNotInWGD = (List<CMMPDILdapUser>) CollectionUtils.subtract(_bdoUsers, _wgdUsers);
+
+        for ( CMMPDILdapUser bdoUser : _inBDOButNotInWGD ){
+            this.cmmpdiLdapUserService.createCMMPDIUser(bdoUser);
+        }
     }
 
-    public void syncToWGD() {
+    public void syncToWGD() throws InvalidNameException {
 
         int length = 3;
         char[] chars = new char[length];
