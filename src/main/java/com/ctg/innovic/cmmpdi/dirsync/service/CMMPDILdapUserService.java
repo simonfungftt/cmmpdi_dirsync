@@ -12,6 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.support.LdapNameBuilder;
@@ -39,6 +40,7 @@ public class CMMPDILdapUserService {
     private CMMPDILdapCacheService cmmpdiLdapCacheService;
 
     @Autowired
+    @Qualifier("cmmpdiLdapTemplate")
     private LdapTemplate ldapTemplate;
 
     @Autowired
@@ -115,7 +117,7 @@ public class CMMPDILdapUserService {
      */
     public boolean createOrUpdateCMMPDIUser(CMMPExchangeLdapUser pCMMPExchangeLdapUser) throws InvalidNameException {
 
-        logger.trace("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
         boolean _result = false;
 
@@ -265,12 +267,12 @@ public class CMMPDILdapUserService {
     }
 
 
-    private boolean updateCMMPDIUser(CMMPExchangeLdapUser pCMMPExchangeLdapUser) {
+    protected boolean updateCMMPDIUser(CMMPExchangeLdapUser pCMMPExchangeLdapUser) {
 
         CMMPDILdapUser pCMMPDILdapUser = this.cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(pCMMPExchangeLdapUser.getMail());
 
+        // If the user is not a CMMP-DI mailbox
         if ( pCMMPDILdapUser != null && pCMMPDILdapUser.getExtensionAttribute3() <= 3) {
-
             this.updateUserAttributes(pCMMPExchangeLdapUser, pCMMPDILdapUser);
         }
 

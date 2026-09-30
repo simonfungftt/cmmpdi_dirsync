@@ -5,9 +5,13 @@ import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeContainer;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.exception.DirSyncApplicationException;
+import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
+import com.ctg.innovic.cmmpdi.dirsync.utils.DataSyncManager;
+import com.ctg.innovic.cmmpdi.dirsync.utils.LogUtils;
 import com.ctg.innovic.cmmpdi.dirsync.utils.OldestFileFinderUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -22,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -67,6 +72,12 @@ public class ProcessService {
     @Autowired
     private CMMPDILdapGroupService cmmpdiLdapGroupService;
 
+    @Autowired
+    private CMMPDILdapWGDService cmmpdiLdapWGDService;
+
+    @Autowired
+    private DataSyncManager dataSyncManager;
+
     /**
      * To effective resolve membership (original in CN form), need all the CN of users to build up members
      *
@@ -97,6 +108,26 @@ public class ProcessService {
         this.cmmpdiLdapCacheService.initCMMPDI();
         this.cmmpdiLdapCacheService.initCMMPDIWGD();
     }
+
+
+    public void fullSyncCMMP2CMMPDI() {
+
+    }
+
+    public void deltaSyncCMMP2CMMPDI() {
+
+        // 1. Read last data sync time
+        Instant _lastDataSyncTime = dataSyncManager.getLastSyncTime();
+
+        // Foreach OU in CMMP, get users modified last since last data sync time
+
+        // Fetch for the list
+
+        // Do the create / update
+
+        dataSyncManager.saveLastSyncTime(Instant.now());
+    }
+
 
     public void processGroupInputData() throws DirSyncApplicationException, IOException, InvalidNameException {
 
@@ -158,6 +189,17 @@ public class ProcessService {
 
             moveProcessedFileToDest(_file, new File(this.contactProcessedFilePathDirectory + "/" + _file.getName()));
         }
+    }
+
+
+    public void consolidateWGDUser() throws InvalidNameException, IOException {
+
+        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+
+        this.initCMMPDICache();
+
+        cmmpdiLdapWGDService.syncWGDUsers();
+        cmmpdiLdapWGDService.syncWGDGroups();
     }
 
 
@@ -314,73 +356,4 @@ public class ProcessService {
         return container;
     }
 
-/*
-    public void syncUpdateFromCMMPUser2DI(List<CMMPExchangeLdapUser> pUsers) {
-
-        for ( CMMPExchangeLdapUser _eachUserInLdifFile : pUsers ) {
-
-            if ( _eachUserInLdifFile.getMail().equals("smcheung@cheung.uat.cmmpdi") ||  _eachUserInLdifFile.getMail().startsWith("aa") ) {
-
-                logger.info("Sync update from CMMP to DI on " + _eachUserInLdifFile.getMail() );
-
-                ldapQueryService.createOrUpdateContactInCMMPDI(_eachUserInLdifFile);
-            }
-        }
-    }
-*/
-/*
-    public void doProcessing() {
-
-        logger.info("Step 1. Processing input data files from CMMP...");
-
-        String _fileToProcess = null;
-
-        try {
-            OldestFileFinderUtils _oldestFileFinderService = new OldestFileFinderUtils();
-            Optional<Path> _foundFile = _oldestFileFinderService.getOldestFile(this.contactInputFileDirectory, "ldif");
-
-            _fileToProcess = _foundFile.map(Path::getFileName).map(Path::toString).orElse(null);
-
-
-        }
-        catch (IOException ioe) {
-            logger.error("[DSYNC-ERR001] Failed to access input file directory '" + this.contactInputFileDirectory + "'");
-        }
-
-        if ( _fileToProcess != null ) {
-            logger.info("Going to process file '" + _fileToProcess);
-
-
-            logger.info("Step 2. Reading the file into memory");
-
-            List<CMMPExchangeLdapUser> _userObjectsInMemory = new ArrayList<>();
-
-            try {
-
-                CMMPLdifReaderService _LdifReaderService = new CMMPLdifReaderService();
-                CMMPExchangeContainer container
-                        = _LdifReaderService.parseLdifFile(_fileToProcess);
-
-                logger.info("File statistic, users: " + container.getUsers().size());
-
-                _userObjectsInMemory.addAll(container.getUsers());
-
-                if ( logger.isDebugEnabled() ) {
-                    Gson gson = new Gson();
-                    for (CMMPExchangeLdapUser _exUser : container.getUsers()) {
-                        logger.debug(gson.toJson(_exUser));
-                    }
-                }
-            }
-            catch (IOException e) {
-                logger.error("ABC");
-            }
-
-            logger.info("Step 3. Transformation from CMMP to CMMP-DI");
-
-
-            logger.info("Step 4. Write into CMMP-DI");
-
-        }
-    }*/
 }

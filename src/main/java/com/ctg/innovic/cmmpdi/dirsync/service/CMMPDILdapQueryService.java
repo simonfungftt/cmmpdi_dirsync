@@ -12,6 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.ldap.support.LdapNameBuilder;
@@ -28,6 +29,7 @@ public class CMMPDILdapQueryService {
     private static Logger logger = LogManager.getLogger(CMMPDILdapQueryService.class);
 
     @Autowired
+    @Qualifier("cmmpdiLdapTemplate")
     private LdapTemplate ldapTemplate;
 
     /**

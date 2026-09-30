@@ -66,13 +66,14 @@ public class CMMPDILdapWGDService {
         return _result;
     }
 
-    public void syncWGDUser(String pSearchKey) throws InvalidNameException {
 
-        logger.log(Level.INFO, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+    protected void syncWGDUser(String pSearchKey) throws InvalidNameException {
+
+        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
 
         List<CMMPDILdapUser> _bdoUsers = getWGDUserInBDOOU(pSearchKey);
 
-        List<CMMPDILdapUser> _wgdUsers = getWGDUserInBDOOU(pSearchKey);
+        List<CMMPDILdapUser> _wgdUsers = getWGDUserInWGDOU(pSearchKey);
 
         List<CMMPDILdapUser> _inWGDButNotInBDO = (List<CMMPDILdapUser>) CollectionUtils.subtract(_wgdUsers, _bdoUsers);
 
@@ -83,11 +84,38 @@ public class CMMPDILdapWGDService {
         List<CMMPDILdapUser> _inBDOButNotInWGD = (List<CMMPDILdapUser>) CollectionUtils.subtract(_bdoUsers, _wgdUsers);
 
         for ( CMMPDILdapUser bdoUser : _inBDOButNotInWGD ){
-            this.cmmpdiLdapUserService.createCMMPDIUser(bdoUser);
+            this.cmmpdiLdapUserService.createWGDCMMPDIUser(bdoUser);
         }
     }
 
-    public void syncToWGD() throws InvalidNameException {
+
+    public void syncWGDGroups() throws InvalidNameException {
+
+        int length = 3;
+        char[] chars = new char[length];
+        Arrays.fill(chars, 'a');
+
+        while (true) {
+            String searchKey = new String(chars);
+            //syncWGDUser(searchKey);
+
+            // Increment characters from right to left (like an odometer)
+            int index = length - 1;
+            while (index >= 0 && chars[index] == 'z') {
+                chars[index] = 'a';
+                index--;
+            }
+
+            // Reached "zzz" and wrapped around to the beginning
+            if (index < 0) {
+                break;
+            }
+
+            chars[index]++;
+        }
+    }
+
+    public void syncWGDUsers() throws InvalidNameException {
 
         int length = 3;
         char[] chars = new char[length];

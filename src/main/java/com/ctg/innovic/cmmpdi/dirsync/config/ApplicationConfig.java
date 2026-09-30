@@ -1,4 +1,4 @@
-package com.ctg.innovic.cmmpdi.dirsync;
+package com.ctg.innovic.cmmpdi.dirsync.config;
 
 import com.ctg.innovic.cmmpdi.dirsync.utils.TrustAllLdapSocketFactory;
 import lombok.Getter;
@@ -63,8 +63,13 @@ public class ApplicationConfig {
         return ldapContextSource;
     }
 
-    @Bean
-    LdapTemplate ldapTemplate(@Qualifier("cmmpdiLdapContextSource") ContextSource contextSource) {
+    @Bean("cmmpdiLdapTemplate")
+    LdapTemplate cmmpdiLdapTemplate(@Qualifier("cmmpdiLdapContextSource") ContextSource contextSource) {
+        return new LdapTemplate(contextSource);
+    }
+
+    @Bean("cmmpLdapTemplate")
+    LdapTemplate cmmpLdapTemplate(@Qualifier("cmmpdiLdapContextSource") ContextSource contextSource) {
         return new LdapTemplate(contextSource);
     }
 

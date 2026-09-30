@@ -1,6 +1,5 @@
 package com.ctg.innovic.cmmpdi.dirsync.service;
 
-import com.ctg.innovic.cmmpdi.dirsync.ApplicationConfig;
 import com.ctg.innovic.cmmpdi.dirsync.dto.ExchangeADUser;
 import com.google.gson.FormattingStyle;
 import com.google.gson.Gson;
@@ -9,7 +8,6 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.*;

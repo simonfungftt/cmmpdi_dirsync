@@ -1,5 +1,6 @@
 package com.ctg.innovic.cmmpdi.dirsync;
 
+import com.ctg.innovic.cmmpdi.dirsync.config.ApplicationConfig;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.exception.DirSyncApplicationException;
 import com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapGroupService;
@@ -24,6 +25,8 @@ public class DirsyncApplication {
 
 	private static Logger logger =  LogManager.getLogger(DirsyncApplication.class);
 
+	//private final Map<String, JobTask> tasks;
+
 	public static void main(String[] args) {
 
 		logger.info("Starting CMMP-DI DirSync Application...");
@@ -39,23 +42,18 @@ public class DirsyncApplication {
 
 		ProcessService _processService = _context.getBean(ProcessService.class);
 
-		try {
-			_processService.initCMMPCache();
 
-			_processService.initCMMPDICache();
 
-			_processService.processContactInputData();
+		//try {
+			//_processService.initCMMPCache();
+
+			//_processService.initCMMPDICache();
+
+			//_processService.processContactInputData();
 
 //			_processService.processGroupInputData();
-		}
+		//}
 
-		catch (IOException e) {
-		//	e.printStackTrace();
-		} catch (InvalidNameException e) {
-		//	e.printStackTrace();
-		} catch (DirSyncApplicationException e) {
-		//	e.printStackTrace();
-		}
 //		catch (InvalidNameException e) {
 //			e.printStackTrace();
 //		}

@@ -191,18 +191,25 @@ public class CMMPLdifReaderService {
 
         group.setDn(entry.getDN());
         group.setCn(entry.getAttributeValue("cn"));
-        group.setDisplayName(entry.getAttributeValue("displayName"));
+        group.setDisplayName(entry.getAttributeValue(Constants.LDAP_FIELD_DISPLAY_NAME));
         group.setMail(StringUtils.lowerCase(entry.getAttributeValue("mail")));
 
-        if ( entry.getAttributeValue("extensionAttribute1") != null )
-            group.setExtensionAttribute1(Integer.valueOf(entry.getAttributeValue("extensionAttribute1")));
 
-        if ( entry.getAttributeValue("extensionAttribute3") != null )
-            group.setExtensionAttribute3(Integer.valueOf(entry.getAttributeValue("extensionAttribute3")));
-//        group.setExtensionAttribute5(Integer.valueOf(entry.getAttributeValue("extensionAttribute5")));
-//        group.setExtensionAttribute6(Integer.valueOf(entry.getAttributeValue("extensionAttribute6")));
-//        group.setExtensionAttribute7(Integer.valueOf(entry.getAttributeValue("extensionAttribute7")));
-//        group.setExtensionAttribute10(Integer.valueOf(entry.getAttributeValue("extensionAttribute10")));
+        try {
+            if (entry.hasAttribute(Constants.LDAP_FIELD_EXT1))
+                group.setExtensionAttribute1(Integer.valueOf(entry.getAttributeValue(Constants.LDAP_FIELD_EXT1)));
+        } catch (NumberFormatException ne) {}
+
+        try {
+            if (entry.hasAttribute(Constants.LDAP_FIELD_EXT3))
+                group.setExtensionAttribute3(Integer.valueOf(entry.getAttributeValue(Constants.LDAP_FIELD_EXT3)));
+        } catch (NumberFormatException ne) {}
+
+        try {
+            if (entry.hasAttribute(Constants.LDAP_FIELD_EXT7))
+                group.setExtensionAttribute7(Integer.valueOf(entry.getAttributeValue(Constants.LDAP_FIELD_EXT7)));
+        } catch (NumberFormatException ne) {}
+
 
         Attribute memberAttr = entry.getAttribute("member");
         if (memberAttr != null) {

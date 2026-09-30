@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.support.LdapNameBuilder;
@@ -36,6 +37,7 @@ public class CMMPDILdapGroupService {
     private CMMPDILdapCacheService CMMPDILdapCacheService;
 
     @Autowired
+    @Qualifier("cmmpdiLdapTemplate")
     private LdapTemplate ldapTemplate;
 
     @Autowired

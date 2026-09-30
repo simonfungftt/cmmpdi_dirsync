@@ -4,6 +4,7 @@ import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
 import com.ctg.innovic.cmmpdi.dirsync.utils.LogUtils;
+import com.unboundid.util.NotNull;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -183,13 +184,13 @@ public class CMMPDILdapCacheService {
     public void addUserCache(CMMPDILdapUser pCMMPDILdapUser) {
 
         if ( pCMMPDILdapUser != null ) {
-            this.cmmpdiUserSMTP2DnMap.put(pCMMPDILdapUser.getEmail(), pCMMPDILdapUser);
+            this.cmmpdiUserSMTP2DnMap.put(pCMMPDILdapUser.getEmail().toLowerCase(), pCMMPDILdapUser);
         }
     }
 
 
 
-    public CMMPDILdapGroup getCMMPDIGroupDnBySMTP(String pSmtp) {
+    public CMMPDILdapGroup getCMMPDIGroupDnBySMTP(@NotNull String pSmtp) {
 
         if ( StringUtils.trimToNull(pSmtp) != null ) {
 
@@ -202,7 +203,7 @@ public class CMMPDILdapCacheService {
     }
 
 
-    public CMMPDILdapUser getCMMPDIUserDnBySMTP(String pSmtp) {
+    public CMMPDILdapUser getCMMPDIUserDnBySMTP(@NotNull String pSmtp) {
 
         if ( StringUtils.trimToNull(pSmtp) != null ) {
 
@@ -217,14 +218,12 @@ public class CMMPDILdapCacheService {
 
     public List<CMMPDILdapUser> getAllBDOUsersFromBDO() {
 
-        List<CMMPDILdapUser> _users = new ArrayList<>(this.cmmpdiUserSMTP2DnMap.values());
-        return _users;
+        return new ArrayList<>(this.cmmpdiUserSMTP2DnMap.values());
     }
 
     public List<CMMPDILdapUser> getWGDUsersFromWGD() {
 
-        List<CMMPDILdapUser> _users = new ArrayList<>(this.cmmpdiWGDUserSMTP2DnMap.values());
-        return _users;
+        return new ArrayList<>(this.cmmpdiWGDUserSMTP2DnMap.values());
     }
 
 }

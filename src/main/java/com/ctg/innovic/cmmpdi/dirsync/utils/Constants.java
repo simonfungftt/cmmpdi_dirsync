@@ -23,7 +23,31 @@ public class Constants {
 
     public static final String LDAP_FIELD_DISPLAY_NAME = "displayName";
 
+    public static final String LDAP_FIELD_GIVEN_NAME = "givenName";
+
+    public static final String LDAP_FIELD_COUNTRY_CODE = "countryCode";
+
     public static final String LDAP_FIELD_MEMBER = "member";
+
+    public static final String LDAP_FIELD_EXT1 = "extensionAttribute1";
+
+    public static final String LDAP_FIELD_EXT3 = "extensionAttribute1";
+
+    public static final String LDAP_FIELD_EXT7 = "extensionAttribute7";
+
+    public static final String LDAP_FIELD_GCERT = "gCert";
+
+    public static final String LDAP_FIELD_ECERT = "userCert";
+
+    public static final String LDAP_FIELD_CERT17 = "userCert17";
+
+    public static final String LDAP_FIELD_CERT18 = "userCert18";
+
+
+
+
+
+
 
 
     protected static Map<String, String> bd2ouMap = new HashMap<>();
