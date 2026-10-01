@@ -5,6 +5,10 @@ import java.util.Map;
 
 public class Constants {
 
+    public static final String ARGS_DELTA = "delta";
+    public static final String ARGS_FULL = "full";
+    public static final String ARGS_WGD = "wgd";
+
     public static final String LOGGING_ENTERING = "Entering ";
 
     public static final String CMMP_OU_TO_REPLACE_WITH = "OU=CMMPBDOs,DC=uat,DC=cmmp,DC=hksarg";
@@ -16,31 +20,23 @@ public class Constants {
     public static final String ERRORCODE_PREFIX = "DSYNC-ERR";
 
     public static final String LDAP_BASE_OU_BDO = "ou=bdo,ou=cmmpdi-bdos";
-
     public static final String LDAP_BASE_OU_WGD = "ou=wgd,ou=cmmpdi-bdos";
 
     public static final String LDAP_FIELD_OBJECT_CLASS = "objectClass";
-
     public static final String LDAP_FIELD_DISPLAY_NAME = "displayName";
-
+    public static final String LDAP_FIELD_CN = "cn";
+    public static final String LDAP_FIELD_MAIL = "mail";
     public static final String LDAP_FIELD_GIVEN_NAME = "givenName";
-
+    public static final String LDAP_FIELD_PROXY_ADDRESS = "proxyAddresses";
+    public static final String LDAP_FIELD_DESCRIPTION = "description";
     public static final String LDAP_FIELD_COUNTRY_CODE = "countryCode";
-
     public static final String LDAP_FIELD_MEMBER = "member";
-
     public static final String LDAP_FIELD_EXT1 = "extensionAttribute1";
-
-    public static final String LDAP_FIELD_EXT3 = "extensionAttribute1";
-
+    public static final String LDAP_FIELD_EXT3 = "extensionAttribute3";
     public static final String LDAP_FIELD_EXT7 = "extensionAttribute7";
-
     public static final String LDAP_FIELD_GCERT = "gCert";
-
     public static final String LDAP_FIELD_ECERT = "userCert";
-
     public static final String LDAP_FIELD_CERT17 = "userCert17";
-
     public static final String LDAP_FIELD_CERT18 = "userCert18";
 
 

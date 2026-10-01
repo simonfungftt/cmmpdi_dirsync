@@ -9,6 +9,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
 @Service
@@ -16,6 +18,8 @@ public class DataSyncManager {
 
     private static final Path STATE_FILE = Paths.get("data_sync_state.txt");
     private static final Instant DEFAULT_INITIAL_START = Instant.parse("2026-01-01T00:00:00Z");
+    private static final String LOG_INSTANT_FORMAT = "YYYY-MM-DD'T'hh:mm";
+
 
     public Instant getLastSyncTime() {
 
@@ -50,4 +54,14 @@ public class DataSyncManager {
             throw new IllegalStateException("Failed to persist sync timestamp", e);
         }
     }
+
+    public String getLogFormat(Instant timestamp) {
+
+        DateTimeFormatter formatter = DateTimeFormatter
+                .ofPattern(LOG_INSTANT_FORMAT)
+                .withZone(ZoneOffset.of("+08:00"));
+
+        return formatter.format(timestamp);
+    }
+
 }

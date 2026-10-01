@@ -34,7 +34,7 @@ public class CMMPDILdapWGDService {
 
         List<CMMPDILdapUser> _result = new ArrayList<>();
 
-        for ( CMMPDILdapUser _user : this.cmmpdiLdapCacheService.getWGDUsersFromWGD() ) {
+        for ( CMMPDILdapUser _user : this.cmmpdiLdapCacheService.getWGDUsersFromWGDFromCache() ) {
 
             String _email = StringUtils.trimToEmpty(_user.getEmail());
 
@@ -51,11 +51,11 @@ public class CMMPDILdapWGDService {
 
         List<CMMPDILdapUser> _result = new ArrayList<>();
 
-        for ( CMMPDILdapUser _user : this.cmmpdiLdapCacheService.getAllBDOUsersFromBDO() ) {
+        for ( CMMPDILdapUser _user : this.cmmpdiLdapCacheService.getAllBDOUsersFromBDOFromCache() ) {
 
             String _email = StringUtils.trimToEmpty(_user.getEmail());
 
-            if ( _email.toLowerCase().startsWith(searchKey.toLowerCase() ) ) {
+            if ( _email.toLowerCase().startsWith( searchKey.toLowerCase() ) ) {
 
                 if ( _user.getExtensionAttribute7() == 1 ) {
                     _result.add(_user);
@@ -78,7 +78,7 @@ public class CMMPDILdapWGDService {
         List<CMMPDILdapUser> _inWGDButNotInBDO = (List<CMMPDILdapUser>) CollectionUtils.subtract(_wgdUsers, _bdoUsers);
 
         for ( CMMPDILdapUser wgdUser : _inWGDButNotInBDO ){
-            this.cmmpdiLdapUserService.deleteCMMPDIUser(wgdUser);
+            this.cmmpdiLdapUserService.deleteCMMPDIUserByDN(wgdUser);
         }
 
         List<CMMPDILdapUser> _inBDOButNotInWGD = (List<CMMPDILdapUser>) CollectionUtils.subtract(_bdoUsers, _wgdUsers);
@@ -123,6 +123,8 @@ public class CMMPDILdapWGDService {
 
         while (true) {
             String searchKey = new String(chars);
+
+            logger.log(Level.DEBUG, String.format("Handling searchKey %s", searchKey));
             syncWGDUser(searchKey);
 
             // Increment characters from right to left (like an odometer)

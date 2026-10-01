@@ -1,8 +1,5 @@
 package com.ctg.innovic.cmmpdi.dirsync.dto;
 
-import lombok.Data;
-
-@Data
 public class CMMPExchangeLdapUser {
 
     private String dn;
@@ -92,5 +89,29 @@ public class CMMPExchangeLdapUser {
 
     public String getCn() {
         return cn;
+    }
+
+    public String getSn() {
+        return sn;
+    }
+
+    public String getGivenName() {
+        return givenName;
+    }
+
+    public byte[] getUserCert() {
+        return userCert;
+    }
+
+    public byte[] getUserCertificate() {
+        return userCertificate;
+    }
+
+    public int getExtensionAttribute7() {
+        return extensionAttribute7;
+    }
+
+    public int getExtensionAttribute3() {
+        return extensionAttribute3;
     }
 }

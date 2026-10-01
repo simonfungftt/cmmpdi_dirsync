@@ -1,7 +1,6 @@
 package com.ctg.innovic.cmmpdi.dirsync.config;
 
 import com.ctg.innovic.cmmpdi.dirsync.utils.TrustAllLdapSocketFactory;
-import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -22,7 +21,6 @@ import java.util.Map;
 @PropertySource("classpath:application.properties")
 @ComponentScan({"com.ctg.innovic.cmmpdi.dirsync"})
 @EnableLdapRepositories("com.ctg.innovic.cmmpdi.dirsync.repro")
-@Getter
 public class ApplicationConfig {
 
     private static Logger logger = LogManager.getLogger(ApplicationConfig.class);
@@ -49,6 +47,7 @@ public class ApplicationConfig {
         ldapContextSource.setPassword(this.password);
         ldapContextSource.setUrl(this.url);
         ldapContextSource.setPooled(false);
+        ldapContextSource.setReferral("ignore");
 
         // Set custom environment properties to bypass SSL certificate validation
         Map<String, Object> baseEnvironmentProperties = new HashMap<>();

@@ -2,7 +2,6 @@ package com.ctg.innovic.cmmpdi.dirsync.dto;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Data;
 import org.springframework.ldap.odm.annotations.Attribute;
 import org.springframework.ldap.odm.annotations.Entry;
 import org.springframework.ldap.odm.annotations.Id;
@@ -12,7 +11,6 @@ import java.util.Comparator;
 
 // Map to standard LDAP objectClasses (e.g. inetOrgPerson or user)
 @Entry(objectClasses = {"top", "person", "organizationalPerson", "inetOrgPerson"}, base = "ou=Users")
-@Data
 public final class CMMPDILdapUser {
 
     @Id
@@ -37,8 +35,17 @@ public final class CMMPDILdapUser {
     @Attribute(name = "userPassword")
     private String password;
 
+    @Attribute(name = "gCert")
+    private String gCert;
+
+    @Attribute(name = "userCert")
+    private String userCert;
+
     @Attribute(name = "userCert17")
     private String userCert17;
+
+    @Attribute(name = "userCert17")
+    private String userCert18;
 
     @Attribute(name = "displayName")
     private String displayName;
@@ -120,4 +127,46 @@ public final class CMMPDILdapUser {
     public int getExtensionAttribute1() {
         return this.extensionAttribute1;
     }
+
+    public String getgCert() {
+        return gCert;
+    }
+
+    public String getUserCert() {
+        return userCert;
+    }
+
+    public int getExtensionAttribute7() {
+        return extensionAttribute7;
+    }
+
+    public void setExtensionAttribute7(int extensionAttribute7) {
+        this.extensionAttribute7 = extensionAttribute7;
+    }
+
+    public void setExtensionAttribute3(int extensionAttribute3) {
+        this.extensionAttribute3 = extensionAttribute3;
+    }
+
+    public void setExtensionAttribute1(int extensionAttribute1) {
+        this.extensionAttribute1 = extensionAttribute1;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public void setSurname(String surname) {
+        this.surname = surname;
+    }
+
+    public void setgCert(String gCert) {
+        this.gCert = gCert;
+    }
+
+    public void setUserCert(String userCert) {
+        this.userCert = userCert;
+    }
+
+    //    pub
 }

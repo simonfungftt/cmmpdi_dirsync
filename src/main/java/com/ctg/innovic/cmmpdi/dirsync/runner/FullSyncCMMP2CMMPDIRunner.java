@@ -1,10 +1,12 @@
-package com.ctg.innovic.cmmpdi.dirsync;
+package com.ctg.innovic.cmmpdi.dirsync.runner;
 
 import com.ctg.innovic.cmmpdi.dirsync.config.PropertiesCmmpSync;
+import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapGroupService;
 import com.ctg.innovic.cmmpdi.dirsync.service.CMMPDILdapUserService;
 import com.ctg.innovic.cmmpdi.dirsync.service.CMMPLdapQueryService;
+import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
 import com.ctg.innovic.cmmpdi.dirsync.utils.DataSyncManager;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -12,13 +14,14 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.List;
 
-public class DeltaSyncCMMP2CMMPDIRunner implements ApplicationRunner {
+@Service
+public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
 
-    private static Logger logger = LogManager.getLogger(DeltaSyncCMMP2CMMPDIRunner.class);
+    private static Logger logger = LogManager.getLogger(FullSyncCMMP2CMMPDIRunner.class);
 
     @Autowired
     private DataSyncManager dataSyncManager;
@@ -38,13 +41,13 @@ public class DeltaSyncCMMP2CMMPDIRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
 
-        if ( args.containsOption("delta") ) {
+        if ( args.containsOption(Constants.ARGS_FULL) ) {
 
-            Instant _lastDataSyncTime = dataSyncManager.getLastSyncTime();
+            logger.log(Level.INFO, String.format("Start running full directory sync to CMMP-DI"));
 
             for (String _ou : propertiesCmmpSync.getSourceBases() ) {
 
-                List<CMMPExchangeLdapUser> _exUsers = cmmpLdapQueryService.getLastModifiedUserUnderOU(_ou, _lastDataSyncTime);
+                List<CMMPExchangeLdapUser> _exUsers = cmmpLdapQueryService.getAllUserUnderOU(_ou);
 
                 for ( CMMPExchangeLdapUser _exUser : _exUsers ) {
                     cmmpdiLdapUserService.createOrUpdateCMMPDIUser(_exUser);
@@ -53,20 +56,12 @@ public class DeltaSyncCMMP2CMMPDIRunner implements ApplicationRunner {
 
             for (String _ou : propertiesCmmpSync.getSourceBases() ) {
 
-//                List<CMMPExchangeLdapUser> _exUsers = cmmpLdapQueryService.getLastModifiedGroupUnderOU(_ou, _lastDataSyncTime);
-//
-//                for ( CMMPExchangeLdapUser _exUser : _exUsers ) {
-//                    cmmpdiLdapUserService.createOrUpdateCMMPDIUser(_exUser);
-//                }
+                List<CMMPExchangeLdapGroup> _exGroups = cmmpLdapQueryService.getAllGroupUnderOU(_ou);
+
+                for ( CMMPExchangeLdapGroup _exGroup : _exGroups ) {
+                    cmmpdiLdapGroupService.createOrUpdateCMMPDIGroup(_exGroup);
+                }
             }
-
-            // Foreach OU in CMMP, get users modified last since last data sync time
-
-            // Fetch for the list
-
-            // Do the create / update
-
-            dataSyncManager.saveLastSyncTime(Instant.now());
         }
     }
 }

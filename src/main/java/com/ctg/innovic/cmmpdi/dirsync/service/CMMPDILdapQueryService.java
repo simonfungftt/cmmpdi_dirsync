@@ -8,12 +8,14 @@ import com.ctg.innovic.cmmpdi.dirsync.utils.LogUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.ldap.support.LdapNameBuilder;
 import org.springframework.stereotype.Service;
@@ -40,12 +42,13 @@ public class CMMPDILdapQueryService {
 
         logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
-        List<CMMPDILdapUser> _result = ldapTemplate.find(
-                LdapQueryBuilder.query()
-                        .base(Constants.LDAP_BASE_OU_BDO)
-                        .where("objectClass").is("inetOrgPerson"),
-                CMMPDILdapUser.class
-        );
+        LdapQuery _query =  LdapQueryBuilder.query()
+                .base(Constants.LDAP_BASE_OU_BDO)
+                .where("objectClass").is("inetOrgPerson");
+
+        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
+
+        List<CMMPDILdapUser> _result = ldapTemplate.find(_query, CMMPDILdapUser.class);
 
         return _result;
     }
@@ -59,12 +62,13 @@ public class CMMPDILdapQueryService {
 
         logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
-        List<CMMPDILdapUser> _result = ldapTemplate.find(
-                LdapQueryBuilder.query()
-                        .base(Constants.LDAP_BASE_OU_WGD)
-                        .where("objectClass").is("inetOrgPerson"),
-                CMMPDILdapUser.class
-        );
+        LdapQuery _query = LdapQueryBuilder.query()
+                            .base(Constants.LDAP_BASE_OU_WGD)
+                            .where("objectClass").is("inetOrgPerson");
+
+        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
+
+        List<CMMPDILdapUser> _result = ldapTemplate.find(_query, CMMPDILdapUser.class);
 
         return _result;
     }
@@ -78,12 +82,13 @@ public class CMMPDILdapQueryService {
 
         logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
-        List<CMMPDILdapGroup> _result = ldapTemplate.find(
-                LdapQueryBuilder.query()
-                        .base(Constants.LDAP_BASE_OU_BDO)
-                        .where("objectClass").is("group"),
-                CMMPDILdapGroup.class
-        );
+        LdapQuery _query = LdapQueryBuilder.query()
+                            .base(Constants.LDAP_BASE_OU_BDO)
+                            .where("objectClass").is("group");
+
+        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
+
+        List<CMMPDILdapGroup> _result = ldapTemplate.find(_query, CMMPDILdapGroup.class);
 
         return _result;
     }
@@ -93,12 +98,13 @@ public class CMMPDILdapQueryService {
 
         logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
-        List<CMMPDILdapGroup> _result = ldapTemplate.find(
-                LdapQueryBuilder.query()
-                        .base(Constants.LDAP_BASE_OU_WGD)
-                        .where("objectClass").is("group"),
-                CMMPDILdapGroup.class
-        );
+        LdapQuery _query = LdapQueryBuilder.query()
+                .base(Constants.LDAP_BASE_OU_WGD)
+                .where("objectClass").is("group");
+
+        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
+
+        List<CMMPDILdapGroup> _result = ldapTemplate.find(_query, CMMPDILdapGroup.class);
 
         return _result;
     }
@@ -143,12 +149,13 @@ public class CMMPDILdapQueryService {
 
         logger.debug("Entering " + LogUtils.getCurrentMethodName() + " with search condition mail: '" + email + "'");
 
-        List<CMMPDILdapUser> _result = ldapTemplate.find(
-            LdapQueryBuilder.query()
-                    .base(Constants.LDAP_BASE_OU_BDO)
-                    .where("objectClass").is("inetOrgPerson").and("mail").is(email),
-                    CMMPDILdapUser.class
-            );
+        LdapQuery _query = LdapQueryBuilder.query()
+                .base(Constants.LDAP_BASE_OU_BDO)
+                .where("objectClass").is("inetOrgPerson").and("mail").is(email);
+
+        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
+
+        List<CMMPDILdapUser> _result = ldapTemplate.find(_query, CMMPDILdapUser.class);
 
         if ( logger.isTraceEnabled() ) {
 

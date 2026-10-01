@@ -216,12 +216,12 @@ public class CMMPDILdapCacheService {
     }
 
 
-    public List<CMMPDILdapUser> getAllBDOUsersFromBDO() {
+    public List<CMMPDILdapUser> getAllBDOUsersFromBDOFromCache() {
 
         return new ArrayList<>(this.cmmpdiUserSMTP2DnMap.values());
     }
 
-    public List<CMMPDILdapUser> getWGDUsersFromWGD() {
+    public List<CMMPDILdapUser> getWGDUsersFromWGDFromCache() {
 
         return new ArrayList<>(this.cmmpdiWGDUserSMTP2DnMap.values());
     }

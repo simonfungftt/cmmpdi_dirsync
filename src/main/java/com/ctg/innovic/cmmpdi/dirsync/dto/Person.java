@@ -1,6 +1,5 @@
 package com.ctg.innovic.cmmpdi.dirsync.dto;
 
-import lombok.Data;
 import org.springframework.ldap.odm.annotations.Attribute;
 import org.springframework.ldap.odm.annotations.DnAttribute;
 import org.springframework.ldap.odm.annotations.Entry;
@@ -9,7 +8,6 @@ import org.springframework.ldap.odm.annotations.Id;
 import javax.naming.Name;
 
 @Entry(objectClasses = {"person", "inetOrgPerson", "top"})
-@Data
 public class Person {
 
     @Id

@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -135,11 +134,7 @@ public class CMMPLdifReaderService {
      */
     private CMMPExchangeLdapUser mapToUser(Entry entry) {
 
-//        for ( Attribute _each : entry.getAttributes() ) {
-//            logger.debug(_each.getName() + " " + _each.getValue());
-//        }
-
-        if ( entry.getAttributeValue("mail") == null ) {
+        if ( !entry.hasAttribute(Constants.LDAP_FIELD_MAIL) ||  entry.getAttributeValue(Constants.LDAP_FIELD_MAIL) == null ) {
             return null;
         }
 
@@ -154,23 +149,12 @@ public class CMMPLdifReaderService {
         user.setGivenName(entry.getAttributeValue("givenName"));
         user.setTitle(entry.getAttributeValue("title"));
         user.setDisplayName(entry.getAttributeValue("displayName"));
-//        user.setSAMAccountName(entry.getAttributeValue("sAMAccountName"));
         user.setMail( StringUtils.lowerCase(entry.getAttributeValue("mail")));
         user.setCountryCode(Integer.valueOf(entry.getAttributeValue("countryCode")));
-//        user.setUserAccountControl(entry.getAttributeValue("userAccountControl"));
-//        user.setPwdLastSet(entry.getAttributeValue("pwdLastSet"));
 
         // Binary and Certificate fields loaded directly into byte arrays
-//        user.setObjectGUID(getBytes(entry, "objectGUID"));
-//        user.setObjectSid(getBytes(entry, "objectSid"));
-//        user.setUserPassword(getBytes(entry, "userPassword"));
         user.setUserCertificate(getBytes(entry, "userCertificate"));
         user.setUserSMIMECertificate(getBytes(entry, "userSMIMECertificate"));
-//        user.setUserCert18(getBytes(entry, "userCert18"));
-
-        // Multi-valued fields
-//        user.setObjectClasses(getValuesList(entry, "objectClass"));
-//        user.setOuPaths(getValuesList(entry, "ouPath"));
 
         return user;
     }
@@ -178,10 +162,6 @@ public class CMMPLdifReaderService {
 
 
     private CMMPExchangeLdapGroup mapToGroup(Entry entry) {
-//
-//                for ( Attribute _each : entry.getAttributes() ) {
-//            logger.debug(_each.getName() + " " + _each.getValue());
-//        }
 
         if ( entry.getAttributeValue("mail") == null ) {
             return null;

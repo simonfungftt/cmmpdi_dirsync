@@ -1,12 +1,7 @@
 package com.ctg.innovic.cmmpdi.dirsync.dto;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.util.List;
 
-@Data
 public class CMMPExchangeOrganizationalUnit {
 
     private String dn;

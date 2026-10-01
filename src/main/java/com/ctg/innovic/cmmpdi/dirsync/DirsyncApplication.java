@@ -38,9 +38,9 @@ public class DirsyncApplication {
 		application.setBannerMode(Banner.Mode.OFF);
 		application.run(args);
 
-		ApplicationContext _context = new AnnotationConfigApplicationContext(ApplicationConfig.class);
+//		ApplicationContext _context = new AnnotationConfigApplicationContext(ApplicationConfig.class);
 
-		ProcessService _processService = _context.getBean(ProcessService.class);
+//		ProcessService _processService = _context.getBean(ProcessService.class);
 
 
 
@@ -147,30 +147,30 @@ public class DirsyncApplication {
 		}
 
 
-		boolean b = 1 == 2;
-		if ( b ) {
-
-			CMMPDILdapGroupService _CMMPDILdapGroupService = _context.getBean(CMMPDILdapGroupService.class);
-
-			CMMPExchangeLdapGroup _CMMPExchangeLdapGroup = new CMMPExchangeLdapGroup();
-
-			_CMMPExchangeLdapGroup.setMail("UATTestUATGroup00021@uat.cmmpdi");
-			_CMMPExchangeLdapGroup.getMemberDNs().add("a1chan@chan.sit.cmmpdi");
-			_CMMPExchangeLdapGroup.getMemberDNs().add("revho@ho.uat.cmmpdi");
-			_CMMPExchangeLdapGroup.getMemberDNs().add("20240129EGT4@uatbdob.gov.hk");
-
-			try {
-				List<Name> _result = _CMMPDILdapGroupService.getMemberListBasedOnCMMPOfDI(_CMMPExchangeLdapGroup);
-				for ( Name _name : _result ) {
-					logger.debug("_name = " + _name);
-				}
-
-//				_CMMPDILdapGroupService.updateGroupMembership("UATTestUATGroup00021@uat.cmmpdi", _result);
-			}
-			catch (DirSyncApplicationException e) {
-				e.printStackTrace();
-			}
-		}
+//		boolean b = 1 == 2;
+//		if ( b ) {
+//
+//			CMMPDILdapGroupService _CMMPDILdapGroupService = _context.getBean(CMMPDILdapGroupService.class);
+//
+//			CMMPExchangeLdapGroup _CMMPExchangeLdapGroup = new CMMPExchangeLdapGroup();
+//
+//			_CMMPExchangeLdapGroup.setMail("UATTestUATGroup00021@uat.cmmpdi");
+//			_CMMPExchangeLdapGroup.getMemberDNs().add("a1chan@chan.sit.cmmpdi");
+//			_CMMPExchangeLdapGroup.getMemberDNs().add("revho@ho.uat.cmmpdi");
+//			_CMMPExchangeLdapGroup.getMemberDNs().add("20240129EGT4@uatbdob.gov.hk");
+//
+//			try {
+//				List<Name> _result = _CMMPDILdapGroupService.getMemberListBasedOnCMMPOfDI(_CMMPExchangeLdapGroup);
+//				for ( Name _name : _result ) {
+//					logger.debug("_name = " + _name);
+//				}
+//
+////				_CMMPDILdapGroupService.updateGroupMembership("UATTestUATGroup00021@uat.cmmpdi", _result);
+//			}
+//			catch (DirSyncApplicationException e) {
+//				e.printStackTrace();
+//			}
+//		}
 
 		boolean c = 1 == 2;
 
