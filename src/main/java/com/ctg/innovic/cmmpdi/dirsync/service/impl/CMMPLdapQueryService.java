@@ -1,7 +1,8 @@
-package com.ctg.innovic.cmmpdi.dirsync.service;
+package com.ctg.innovic.cmmpdi.dirsync.service.impl;
 
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapUser;
+import com.ctg.innovic.cmmpdi.dirsync.service.CMMPLdapService;
 import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
 import com.ctg.innovic.cmmpdi.dirsync.utils.DataSyncManager;
 import com.ctg.innovic.cmmpdi.dirsync.utils.LogUtils;
@@ -21,7 +22,7 @@ import java.time.Instant;
 import java.util.List;
 
 @Service
-public class CMMPLdapQueryService {
+public class CMMPLdapQueryService implements CMMPLdapService {
 
     private final static Logger logger = LogManager.getLogger(CMMPLdapQueryService.class);
 
@@ -33,17 +34,17 @@ public class CMMPLdapQueryService {
     private DataSyncManager dataSyncManager;
 
 
-    public CMMPExchangeLdapGroup dipGroupByCN(@NotNull String pCN) {
+    public CMMPExchangeLdapGroup dipGroupBySMTP(@NotNull String pSMTP) {
 
         logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
 
         CMMPExchangeLdapGroup _group = null;
 
-        logger.log(Level.INFO, "Trying to fetch CMMP group where CN = %s", pCN);
+        logger.log(Level.INFO, "Trying to fetch CMMP group where mail = %s", pSMTP);
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base("OU=CMMPBDOs")
-                .where("objectClass").is("user").and("cn").is(pCN);
+                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("group").and("mail").is(pSMTP);
 
         List<CMMPExchangeLdapGroup> _result = ldapTemplate.find(_query, CMMPExchangeLdapGroup.class);
 
@@ -55,19 +56,19 @@ public class CMMPLdapQueryService {
     }
 
 
-    public CMMPExchangeLdapUser dipUserByCN(@NotNull String pCN) {
+    public CMMPExchangeLdapUser dipUserBySMTP(@NotNull String pSMTP) {
 
         logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
 
         CMMPExchangeLdapUser _user = null;
 
-        logger.log(Level.INFO, "Trying to fetch CMMP user where CN = %s", pCN);
+        logger.log(Level.INFO, "Trying to fetch CMMP user where mail = %s", pSMTP);
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base("OU=CMMPBDOs")
-                .where("objectClass").is("user").and("cn").is(pCN);
+                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("user").and("mail").is(pSMTP);
 
-        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
+        logger.log(Level.DEBUG, String.format(Constants.LOGGER_LDAPQUERY_DEBUG, _query.base(), _query.filter()));
 
         List<CMMPExchangeLdapUser> _result = ldapTemplate.find(_query, CMMPExchangeLdapUser.class);
 
@@ -87,6 +88,13 @@ public class CMMPLdapQueryService {
     }
 
 
+    /**
+     * Get all user objects under the given OU and modified since the given timestamp
+     *
+     * @param pOU
+     * @param pLastSyncTime
+     * @return
+     */
     public List<CMMPExchangeLdapUser> getLastModifiedUserUnderOU(@NotNull String pOU, @NotNull Instant pLastSyncTime) {
 
         logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
@@ -96,8 +104,9 @@ public class CMMPLdapQueryService {
 
         logger.log(Level.INFO, "Trying to fetch CMMP users under OU %s and modified time after %s", pOU, formattedTime);
 
+        // TODO: change this OU
         LdapQuery _query = LdapQueryBuilder.query()
-                .base("OU=Users,OU=ITB-OGCIO,OU=CMMPBDOs")
+                .base(pOU /*"OU=Users,OU=ITB-OGCIO,OU=CMMPBDOs"*/)
                 .where("objectClass").is("user").and("whenChanged").gte(formattedTime);
 
         logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
@@ -112,14 +121,28 @@ public class CMMPLdapQueryService {
     }
 
 
+    /**
+     * Get all group objects under the given OU and modified since the given timestamp
+     *
+     * @param pOU
+     * @return
+     */
     public List<CMMPExchangeLdapGroup> getAllGroupUnderOU(@NotNull String pOU) {
 
         logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
 
+        // Find all modified group since 1970-01-01
         return this.getLastModifiedGroupUnderOU(pOU, Instant.EPOCH);
     }
 
 
+    /**
+     * Get all group objects under the given OU and modified since the given timestamp
+     *
+     * @param pOU
+     * @param pLastSyncTime
+     * @return
+     */
     public List<CMMPExchangeLdapGroup> getLastModifiedGroupUnderOU(@NotNull String pOU, @NotNull Instant pLastSyncTime) {
 
         logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
@@ -130,7 +153,7 @@ public class CMMPLdapQueryService {
         logger.log(Level.INFO, "Trying to fetch CMMP groups under OU %s and modified time after %s", pOU, formattedTime);
 
         LdapQuery _query = LdapQueryBuilder.query()
-                .base("OU=Users,OU=ITB-OGCIO,OU=CMMPBDOs")
+                .base(pOU /*"OU=Users,OU=ITB-OGCIO,OU=CMMPBDOs"*/)
                 .where("objectClass").is("group").and("whenChanged").gte(formattedTime);
 
         logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));

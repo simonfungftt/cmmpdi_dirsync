@@ -10,6 +10,7 @@ public class Constants {
     public static final String ARGS_WGD = "wgd";
 
     public static final String LOGGING_ENTERING = "Entering ";
+    public static final String LOGGER_LDAPQUERY_DEBUG = "LDAP Base DN: %s, filter: %s";
 
     public static final String CMMP_OU_TO_REPLACE_WITH = "OU=CMMPBDOs,DC=uat,DC=cmmp,DC=hksarg";
 
@@ -38,8 +39,10 @@ public class Constants {
     public static final String LDAP_FIELD_ECERT = "userCert";
     public static final String LDAP_FIELD_CERT17 = "userCert17";
     public static final String LDAP_FIELD_CERT18 = "userCert18";
+    public static final String LDAP_FIELD_WHENCHANGED = "whenChanged";
 
-
+    public static final int WGD_OPERATION_USER = 1;
+    public static final int WGD_OPERATION_GROUP = 2;
 
 
 

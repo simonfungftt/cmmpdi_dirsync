@@ -1,5 +1,6 @@
 package com.ctg.innovic.cmmpdi.dirsync.dto;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +27,8 @@ public class CMMPExchangeLdapGroup {
     private Integer extensionAttribute10;
 
     private List<String> memberDNs;
+
+    private Instant whenChanged;
 
     public String getMail() {
         return mail;
@@ -97,5 +100,13 @@ public class CMMPExchangeLdapGroup {
 
     public String getDistinguishedName() {
         return distinguishedName;
+    }
+
+    public Instant getWhenChanged() {
+        return whenChanged;
+    }
+
+    public void setWhenChanged(Instant whenChanged) {
+        this.whenChanged = whenChanged;
     }
 }

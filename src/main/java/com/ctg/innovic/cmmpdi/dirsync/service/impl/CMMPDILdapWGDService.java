@@ -1,4 +1,4 @@
-package com.ctg.innovic.cmmpdi.dirsync.service;
+package com.ctg.innovic.cmmpdi.dirsync.service.impl;
 
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
@@ -16,7 +16,6 @@ import javax.naming.InvalidNameException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
 @Service
 public class CMMPDILdapWGDService {
@@ -115,7 +114,13 @@ public class CMMPDILdapWGDService {
         }
     }
 
+
     public void syncWGDUsers() throws InvalidNameException {
+        syncWGDUsers(Constants.WGD_OPERATION_USER);
+    }
+
+
+    private void syncWGDUsers(int mode) throws InvalidNameException {
 
         int length = 3;
         char[] chars = new char[length];
@@ -125,7 +130,13 @@ public class CMMPDILdapWGDService {
             String searchKey = new String(chars);
 
             logger.log(Level.DEBUG, String.format("Handling searchKey %s", searchKey));
-            syncWGDUser(searchKey);
+
+            if ( Constants.WGD_OPERATION_USER == mode) {
+                syncWGDUser(searchKey);
+            }
+            else if ( Constants.WGD_OPERATION_GROUP == mode) {
+                syncWGDUser(searchKey);
+            }
 
             // Increment characters from right to left (like an odometer)
             int index = length - 1;
@@ -142,4 +153,5 @@ public class CMMPDILdapWGDService {
             chars[index]++;
         }
     }
+
 }

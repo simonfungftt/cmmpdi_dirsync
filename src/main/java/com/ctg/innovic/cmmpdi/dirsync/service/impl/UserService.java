@@ -1,4 +1,4 @@
-package com.ctg.innovic.cmmpdi.dirsync.service;
+package com.ctg.innovic.cmmpdi.dirsync.service.impl;
 
 import com.ctg.innovic.cmmpdi.dirsync.dto.Person;
 import com.ctg.innovic.cmmpdi.dirsync.mapper.UserAttributeMapper;

@@ -1,17 +1,13 @@
-package com.ctg.innovic.cmmpdi.dirsync.service;
+package com.ctg.innovic.cmmpdi.dirsync.service.impl;
 
-import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeContainer;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.exception.DirSyncApplicationException;
-import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
 import com.ctg.innovic.cmmpdi.dirsync.utils.DataSyncManager;
-import com.ctg.innovic.cmmpdi.dirsync.utils.LogUtils;
 import com.ctg.innovic.cmmpdi.dirsync.utils.OldestFileFinderUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -26,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -110,25 +105,6 @@ public class ProcessService {
     }
 
 
-    public void fullSyncCMMP2CMMPDI() {
-
-    }
-
-    public void deltaSyncCMMP2CMMPDI() {
-
-        // 1. Read last data sync time
-        Instant _lastDataSyncTime = dataSyncManager.getLastSyncTime();
-
-        // Foreach OU in CMMP, get users modified last since last data sync time
-
-        // Fetch for the list
-
-        // Do the create / update
-
-        dataSyncManager.saveLastSyncTime(Instant.now());
-    }
-
-
     public void processGroupInputData() throws DirSyncApplicationException, IOException, InvalidNameException {
 
         List<File> _files =  fetchInputDataFromFolder(groupInputFileDirectory);
@@ -189,17 +165,6 @@ public class ProcessService {
 
             moveProcessedFileToDest(_file, new File(this.contactProcessedFilePathDirectory + "/" + _file.getName()));
         }
-    }
-
-
-    public void consolidateWGDUser() throws InvalidNameException, IOException {
-
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
-
-        this.initCMMPDICache();
-
-        cmmpdiLdapWGDService.syncWGDUsers();
-        cmmpdiLdapWGDService.syncWGDGroups();
     }
 
 
@@ -333,8 +298,8 @@ public class ProcessService {
 
 			container = cmmpLdifReaderService.parseLdifFile(pInputFile.getAbsolutePath());
 
-			logger.info("Loaded Users: " + container.getUsers().size());
-            logger.info("Loaded Groups: " + container.getGroups().size());
+			logger.info(String.format("Loaded Users: %d", container.getUsers().size()));
+            logger.info(String.format("Loaded Groups: %d", container.getGroups().size()));
 
             if ( logger.isTraceEnabled() ) {
 

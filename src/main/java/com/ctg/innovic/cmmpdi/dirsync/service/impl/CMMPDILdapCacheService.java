@@ -1,4 +1,4 @@
-package com.ctg.innovic.cmmpdi.dirsync.service;
+package com.ctg.innovic.cmmpdi.dirsync.service.impl;
 
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapUser;
@@ -46,19 +46,11 @@ public class CMMPDILdapCacheService {
     }
 
 
-//    public void initCMMP() {
-//
-//        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
-//
-//        logger.info("Initialising CMMP users, loading DN and SMTP mapping into memory...");
-//    }
-
-
     public void initCMMPDI() {
 
         logger.log(Level.DEBUG, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
-        logger.info("Initialising CMMP-DI BDO users...");
+        logger.log(Level.DEBUG, "Initialising CMMP-DI BDO users..." );
 
         this.cmmpdiUserSMTP2DnMap.clear();
         this.cmmpdiGroupSMTP2DnMap.clear();

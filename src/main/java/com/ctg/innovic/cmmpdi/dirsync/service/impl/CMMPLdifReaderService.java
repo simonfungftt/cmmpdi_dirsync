@@ -1,4 +1,4 @@
-package com.ctg.innovic.cmmpdi.dirsync.service;
+package com.ctg.innovic.cmmpdi.dirsync.service.impl;
 
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeContainer;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
@@ -22,6 +22,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -33,6 +36,16 @@ public class CMMPLdifReaderService {
 
     @Autowired
     private CMMPCacheService cmmpCacheService;
+
+
+    private static final DateTimeFormatter LDAP_FORMATTER = new DateTimeFormatterBuilder()
+            .appendPattern("yyyyMMddHHmmss")
+            .optionalStart()
+            .appendLiteral('.')
+            .appendPattern("S") // or appendFraction(ChronoField.NANO_OF_SECOND, 1, 9, false)
+            .optionalEnd()
+            .appendZoneOrOffsetId()
+            .toFormatter();
 
 
     private static final Pattern LDIF_KEY_VALUE_PATTERN =
@@ -68,8 +81,6 @@ public class CMMPLdifReaderService {
         try (InputStream inputStream = new ByteArrayInputStream(ldifContent.getBytes(StandardCharsets.UTF_8));
 
              LDIFReader ldifReader = new LDIFReader(inputStream)) {
-
-
             Entry entry;
 
             int _userCount = 1;
@@ -152,6 +163,10 @@ public class CMMPLdifReaderService {
         user.setMail( StringUtils.lowerCase(entry.getAttributeValue("mail")));
         user.setCountryCode(Integer.valueOf(entry.getAttributeValue("countryCode")));
 
+        if ( entry.hasAttribute(Constants.LDAP_FIELD_WHENCHANGED) ) {
+            user.setWhenChanged(LDAP_FORMATTER.parse(entry.getAttributeValue(Constants.LDAP_FIELD_WHENCHANGED), Instant::from));
+        }
+
         // Binary and Certificate fields loaded directly into byte arrays
         user.setUserCertificate(getBytes(entry, "userCertificate"));
         user.setUserSMIMECertificate(getBytes(entry, "userSMIMECertificate"));
@@ -170,10 +185,13 @@ public class CMMPLdifReaderService {
         CMMPExchangeLdapGroup group = new CMMPExchangeLdapGroup();
 
         group.setDn(entry.getDN());
-        group.setCn(entry.getAttributeValue("cn"));
+        group.setCn(entry.getAttributeValue(Constants.LDAP_FIELD_CN));
         group.setDisplayName(entry.getAttributeValue(Constants.LDAP_FIELD_DISPLAY_NAME));
-        group.setMail(StringUtils.lowerCase(entry.getAttributeValue("mail")));
+        group.setMail(StringUtils.lowerCase(entry.getAttributeValue(Constants.LDAP_FIELD_MAIL)));
 
+        if ( entry.hasAttribute(Constants.LDAP_FIELD_WHENCHANGED) ) {
+            group.setWhenChanged(LDAP_FORMATTER.parse(entry.getAttributeValue(Constants.LDAP_FIELD_WHENCHANGED), Instant::from));
+        }
 
         try {
             if (entry.hasAttribute(Constants.LDAP_FIELD_EXT1))
@@ -191,7 +209,7 @@ public class CMMPLdifReaderService {
         } catch (NumberFormatException ne) {}
 
 
-        Attribute memberAttr = entry.getAttribute("member");
+        Attribute memberAttr = entry.getAttribute(Constants.LDAP_FIELD_MEMBER);
         if (memberAttr != null) {
 
             for ( String _member : Arrays.asList(memberAttr.getValues())) {

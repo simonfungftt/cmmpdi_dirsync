@@ -1,4 +1,4 @@
-package com.ctg.innovic.cmmpdi.dirsync.service;
+package com.ctg.innovic.cmmpdi.dirsync.service.impl;
 
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapUser;
@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.query.LdapQuery;
+import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.ldap.support.LdapNameBuilder;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -54,6 +57,7 @@ public class CMMPDILdapUserService {
 
     @Autowired
     private CMMPDILdapQueryService cmmpdiLdapQueryService;
+
 
     private String getLocalPart(String smtpAddress) {
 
@@ -121,6 +125,29 @@ public class CMMPDILdapUserService {
         _cmmpdiLdapUser.setExtensionAttribute7( pCMMPExchangeLdapUser.getExtensionAttribute7() );
 
         return _cmmpdiLdapUser;
+    }
+
+
+
+    public List<CMMPDILdapUser> getAllUserUnderOU(@com.unboundid.util.NotNull String pOU) {
+
+        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+
+        logger.log(Level.INFO, "Trying to fetch nington users under OU %s", pOU);
+
+        LdapQuery _query = LdapQueryBuilder.query()
+                .base(pOU)
+                .where("objectClass").is("user");
+
+        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
+
+        List<CMMPDILdapUser> _result = ldapTemplate.find(
+                _query, CMMPDILdapUser.class
+        );
+
+        logger.log(Level.INFO, String.format("%05d users have been fetched from nington", _result.size()));
+
+        return _result;
     }
 
 
@@ -326,12 +353,26 @@ public class CMMPDILdapUserService {
 
         Name dn = LdapNameBuilder.newInstance(pCMMPDILdapUser.getDn()).build();
 
-        logger.log(Level.DEBUG,
+        logger.log(Level.INFO,
                 String.format(
-                    "Going to delete user object with DN '%s'", dn
+                    "Going to delete user object with DN '%s' from WGD", dn
                 ));
 
         this.ldapTemplate.unbind(dn);
+
+        return true;
+    }
+
+
+    public boolean deleteCMMPDIUserBySMTP(@NotNull String pSMTPAddress) {
+
+        logger.log(Level.TRACE, String.format(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() ) );
+
+        CMMPDILdapUser _cmmpdiLdapUser = this.cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(pSMTPAddress);
+
+        if ( _cmmpdiLdapUser != null ) {
+            return this.deleteCMMPDIUserByDN(_cmmpdiLdapUser);
+        }
 
         return true;
     }

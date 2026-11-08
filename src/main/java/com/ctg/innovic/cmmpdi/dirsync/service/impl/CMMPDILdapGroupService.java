@@ -1,4 +1,4 @@
-package com.ctg.innovic.cmmpdi.dirsync.service;
+package com.ctg.innovic.cmmpdi.dirsync.service.impl;
 
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapUser;
@@ -45,7 +45,7 @@ public class CMMPDILdapGroupService {
 
     public boolean createOrUpdateCMMPDIGroup(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws InvalidNameException {
 
-        boolean _result = false;
+        //boolean _result = false;
 
         logger.debug(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
@@ -132,7 +132,7 @@ public class CMMPDILdapGroupService {
 
     public List<Name> getMemberListBasedOnCMMPOfDI(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws DirSyncApplicationException {
 
-        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        logger.debug(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
         List<String> _memberSmtpList = this.convertMembershipListFromCMMP(pCMMPExchangeLdapGroup);
 
@@ -210,7 +210,7 @@ public class CMMPDILdapGroupService {
         String[] _memberArray = this.getCMMPDIMemberByDN( pCMMPExchangeLdapGroup.getMemberDNs() );
 
         for ( int i = 0; i < _memberArray.length; i++ ) {
-            context.addAttributeValue("member", _memberArray[ i ]);
+            context.addAttributeValue(Constants.LDAP_FIELD_MEMBER, _memberArray[ i ]);
         }
 
         logger.info("context = " + context);
@@ -234,6 +234,7 @@ public class CMMPDILdapGroupService {
 
 
 
+    @SuppressWarnings("java:S3457")
     private boolean updateGroupMembership(String smtpAddress, List<String> newMemberList) {
 
         logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
@@ -290,6 +291,7 @@ public class CMMPDILdapGroupService {
 
             // Assume the group already exists
             CMMPDILdapGroup _groupNewImage = this.CMMPDILdapCacheService.getCMMPDIGroupDnBySMTP(smtpAddress);
+
 
             logger.debug( "After action, there are " + _groupNewImage.getMembers().size() + " members in group.");
 

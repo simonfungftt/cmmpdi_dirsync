@@ -1,5 +1,7 @@
 package com.ctg.innovic.cmmpdi.dirsync.dto;
 
+import java.time.Instant;
+
 public class CMMPExchangeLdapUser {
 
     private String dn;
@@ -20,6 +22,9 @@ public class CMMPExchangeLdapUser {
     private int extensionAttribute3;
     private int extensionAttribute7;
     private int msExchAddressBookFlags;
+
+    private Instant whenChanged;
+
 
     public String getMail() {
         return mail;
@@ -113,5 +118,13 @@ public class CMMPExchangeLdapUser {
 
     public int getExtensionAttribute3() {
         return extensionAttribute3;
+    }
+
+    public Instant getWhenChanged() {
+        return whenChanged;
+    }
+
+    public void setWhenChanged(Instant whenChanged) {
+        this.whenChanged = whenChanged;
     }
 }

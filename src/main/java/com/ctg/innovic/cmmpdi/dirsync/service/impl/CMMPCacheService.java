@@ -1,7 +1,8 @@
-package com.ctg.innovic.cmmpdi.dirsync.service;
+package com.ctg.innovic.cmmpdi.dirsync.service.impl;
 
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapUser;
+import com.unboundid.util.NotNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
@@ -26,31 +27,39 @@ public class CMMPCacheService {
         this.cmmpSmtp2GroupMap = new HashMap<>();
     }
 
-    public void addCache(String key, String value) {
+    public void addCache(@NotNull String key, @NotNull String value) {
         this.cmmpDN2SmtpMap.put(key, value);
     }
 
-    public String lookupSmtpByCMMPDN(String dn) {
+    public String lookupSmtpByCMMPDN(@NotNull String dn) {
         return this.cmmpDN2SmtpMap.get(dn);
     }
 
-    public void addUserCache(CMMPExchangeLdapUser user) {
+    public void addUserCache(@NotNull CMMPExchangeLdapUser user) {
         if ( user != null && user.getMail() != null ) {
             cmmpSmtp2UserMap.put(user.getMail().toLowerCase(), user);
         }
     }
 
-    public CMMPExchangeLdapUser getUserFromCache(String smtp) {
-        return this.cmmpSmtp2UserMap.get(smtp.toUpperCase());
+    public CMMPExchangeLdapUser getUserFromCacheBySMTP(@NotNull String smtp) {
+        return this.cmmpSmtp2UserMap.get(smtp.toLowerCase());
     }
 
-    public void addGroupCache(CMMPExchangeLdapGroup group) {
+    public void addGroupCache(@NotNull CMMPExchangeLdapGroup group) {
         if ( group != null && group.getMail() != null ) {
             cmmpSmtp2GroupMap.put(group.getMail().toLowerCase(), group);
         }
     }
 
-    public CMMPExchangeLdapGroup getGroupFromCache(String smtp) {
-        return this.cmmpSmtp2GroupMap.get(smtp.toUpperCase());
+    public CMMPExchangeLdapGroup getGroupFromCacheBySMTP(@NotNull String smtp) {
+        return this.cmmpSmtp2GroupMap.get(smtp.toLowerCase());
+    }
+
+    protected Map<String, CMMPExchangeLdapUser> getCmmpSmtp2UserMap() {
+        return cmmpSmtp2UserMap;
+    }
+
+    protected Map<String, CMMPExchangeLdapGroup> getCmmpSmtp2GroupMap() {
+        return cmmpSmtp2GroupMap;
     }
 }
