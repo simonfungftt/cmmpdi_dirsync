@@ -100,7 +100,7 @@ public class ProcessService {
 
     public void initCMMPDICache() throws IOException {
 
-        this.cmmpdiLdapCacheService.initCMMPDI();
+        this.cmmpdiLdapCacheService.initCMMPDIBDO();
         this.cmmpdiLdapCacheService.initCMMPDIWGD();
     }
 

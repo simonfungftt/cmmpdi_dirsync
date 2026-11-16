@@ -18,7 +18,7 @@ public class DataSyncManager {
 
     private static final Path STATE_FILE = Paths.get("data_sync_state.txt");
     private static final Instant DEFAULT_INITIAL_START = Instant.parse("2026-01-01T00:00:00Z");
-    private static final String LOG_INSTANT_FORMAT = "YYYY-MM-DD'T'hh:mm";
+    private static final String LOG_INSTANT_FORMAT = "YYYY-MM-DD'T'hh:mm:ss";
 
 
     public Instant getLastSyncTime() {
@@ -41,7 +41,6 @@ public class DataSyncManager {
     public void saveLastSyncTime(Instant timestamp) {
 
         try {
-
             Files.writeString(
                     STATE_FILE,
                     timestamp.toString(),
@@ -55,7 +54,7 @@ public class DataSyncManager {
         }
     }
 
-    public String getLogFormat(Instant timestamp) {
+    public static String getLogFormat(Instant timestamp) {
 
         DateTimeFormatter formatter = DateTimeFormatter
                 .ofPattern(LOG_INSTANT_FORMAT)

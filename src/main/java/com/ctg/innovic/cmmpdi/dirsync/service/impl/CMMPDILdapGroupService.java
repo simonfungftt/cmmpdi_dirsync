@@ -9,6 +9,7 @@ import com.ctg.innovic.cmmpdi.dirsync.utils.ListCompare;
 import com.ctg.innovic.cmmpdi.dirsync.utils.LogUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,9 +46,9 @@ public class CMMPDILdapGroupService {
 
     public boolean createOrUpdateCMMPDIGroup(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws InvalidNameException {
 
-        //boolean _result = false;
+        boolean _result = false;
 
-        logger.debug(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
         // Determine create or update case
         CMMPDILdapUser _user = this.CMMPDILdapCacheService.getCMMPDIUserDnBySMTP(pCMMPExchangeLdapGroup.getMail());
@@ -78,42 +79,8 @@ public class CMMPDILdapGroupService {
             _result = this.updateGroupMembership(pCMMPExchangeLdapGroup.getMail(), pCMMPExchangeLdapGroup.getMemberDNs());
         }
 
-
-
-        return true;
+        return _result;
     }
-
-
-//    public boolean syncGroupFromCMMP2DI(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws DirSyncApplicationException {
-//
-//        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
-//
-//        String _targetEmail = StringUtils.trimToNull( pCMMPExchangeLdapGroup.getMail() );
-//
-//        if ( _targetEmail == null ) {
-//            throw new DirSyncApplicationException("[DIREX] Unexpected SMTP address is null");
-//        }
-//
-//        // Check if the DN exists in memory
-////        String _dn = this.CMMPDILdapCacheService.getCMMPDIDnBySMTP( _targetEmail );
-//
-//        if ( this.CMMPDILdapCacheService.getCMMPDIGroupDnBySMTP( _targetEmail ) != null ) {
-//
-//            // Update group
-//        }
-//        else if ( this.CMMPDILdapCacheService.getCMMPDIUserDnBySMTP( _targetEmail ) != null ) {
-//
-//            // remove user (only if not CMMPDI mailbox)
-//            // then create it
-//        }
-//        else {
-//
-//            // Does not exists, create it
-//        }
-//
-////        return null;
-//        return false;
-//    }
 
 
     private List<String> convertMembershipListFromCMMP(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws DirSyncApplicationException {
@@ -132,7 +99,8 @@ public class CMMPDILdapGroupService {
 
     public List<Name> getMemberListBasedOnCMMPOfDI(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws DirSyncApplicationException {
 
-        logger.debug(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         List<String> _memberSmtpList = this.convertMembershipListFromCMMP(pCMMPExchangeLdapGroup);
 
@@ -176,9 +144,8 @@ public class CMMPDILdapGroupService {
 
     public boolean createCMMPDIGroup(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws InvalidNameException {
 
-        CMMPDILdapGroup _cmmpdiLdapGroup = new CMMPDILdapGroup();
-
-        logger.debug(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         LdapNameBuilder builder = LdapNameBuilder.newInstance(Constants.BASE_OU_WO_STARTING_COMMAND);
 
@@ -192,7 +159,8 @@ public class CMMPDILdapGroupService {
         builder.add("cn", pCMMPExchangeLdapGroup.getDisplayName().toLowerCase());
         Name dn = builder.build();
 
-        logger.debug("Generate DN = " + dn.toString());
+        _logMessage = "Generate DN = " + dn.toString();
+        logger.log(Level.DEBUG, _logMessage);
 
         // 2. Prepare the context with objectClasses and attributes
         DirContextAdapter context = new DirContextAdapter(dn);
@@ -213,7 +181,8 @@ public class CMMPDILdapGroupService {
             context.addAttributeValue(Constants.LDAP_FIELD_MEMBER, _memberArray[ i ]);
         }
 
-        logger.info("context = " + context);
+        _logMessage = "context = " + context;
+        logger.log(Level.DEBUG, _logMessage);
 
         return true;
     }
@@ -224,7 +193,8 @@ public class CMMPDILdapGroupService {
         List<String> _result = new ArrayList<>();
 
         for (String memberDn : newMemberList) {
-            _result.add(memberDn.toString() + Constants.BASE_OU);
+            String _buffer = memberDn.toString() + Constants.BASE_OU;
+            _result.add(_buffer);
         }
 
         String[] array = _result.toArray(String[]::new);
@@ -234,10 +204,11 @@ public class CMMPDILdapGroupService {
 
 
 
-    @SuppressWarnings("java:S3457")
+
     private boolean updateGroupMembership(String smtpAddress, List<String> newMemberList) {
 
-        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         // Assume the group already exists
         CMMPDILdapGroup _group = this.CMMPDILdapCacheService.getCMMPDIGroupDnBySMTP(smtpAddress);
@@ -246,7 +217,6 @@ public class CMMPDILdapGroupService {
 
             logger.debug( "Group SMTP = " + _group.getEmail());
             logger.debug( "Group DN = " + _group.getDn());
-
             logger.debug( "Before action, there are " + _group.getMembers().size() + " members in group.");
 
             for ( Name _name : _group.getMembers() ) {
@@ -287,7 +257,7 @@ public class CMMPDILdapGroupService {
 
         if ( logger.isDebugEnabled() ) {
 
-            this.CMMPDILdapCacheService.initCMMPDI();
+            this.CMMPDILdapCacheService.initCMMPDIBDO();
 
             // Assume the group already exists
             CMMPDILdapGroup _groupNewImage = this.CMMPDILdapCacheService.getCMMPDIGroupDnBySMTP(smtpAddress);
@@ -314,11 +284,13 @@ public class CMMPDILdapGroupService {
      */
     private boolean updateGroupAttributes(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup, CMMPDILdapGroup pCMMPDILdapGroup) {
 
-        logger.trace("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        String _logMessage = "Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         Name dn = LdapNameBuilder.newInstance(pCMMPDILdapGroup.getDn()).build();
 
-        logger.info("Going to update group attributes for "  + dn.toString() + "...");
+        _logMessage = "Going to update group attributes for "  + dn.toString() + "...";
+        logger.log(Level.INFO, _logMessage);
 
         List<ModificationItem> _list = new ArrayList<>();
 

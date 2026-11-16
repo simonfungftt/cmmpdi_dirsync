@@ -14,11 +14,13 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 @Component
 public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
@@ -44,21 +46,41 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
     @Autowired
     private CMMPDILdapGroupService cmmpdiLdapGroupService;
 
+    @Value("${cmmpdi.bdo.baseOU}")
+    private String cmmpdiBDOBaseOU;
+
+    @Value("${cmmp.bdo.baseOU}")
+    private String cmmpBDOBaseOU;
+
     @Override
     public void run(ApplicationArguments args) throws Exception {
 
         if ( args.containsOption(Constants.ARGS_FULL) ) {
 
-            logger.log(Level.INFO, String.format("Start running full directory sync to CMMP-DI"));
+            String _logMessage = "Start running full directory sync to CMMP-DI";
+            logger.log(Level.INFO, _logMessage);
 
             /**
              * This process is to read CMMP LDAP information (by OU), and write into same OU
              */
 
-            for (String _ou : propertiesCmmpSync.getSourceBases() ) {
+            for (String _ou : propertiesCmmpSync.getBasesOU() ) {
+
+                // As base OU does not contains the last OU, add it
+                String _userOU = "OU=Users," + _ou;
+
+                // Decode the CMMP OU into CMMP-DI as well
+                String _cmmpDIOU = convertDnFromCMMP2CMMPDI(_userOU, cmmpBDOBaseOU, cmmpdiBDOBaseOU);
+
+                _logMessage
+                        = String.format(
+                                "Scanning CMMP OU =%s prepare to write to %s, based on baseOU %s and %s",
+                                _userOU, _cmmpDIOU, cmmpBDOBaseOU, cmmpdiBDOBaseOU);
+
+                logger.log(Level.INFO, _logMessage);
 
                 List<CMMPExchangeLdapUser> _exUsers = exchangeLdapQueryService.getAllUserUnderOU(_ou);
-                List<CMMPDILdapUser> _ningtonUsers = ningtonLdapUserService.getAllUserUnderOU(_ou);
+                List<CMMPDILdapUser> _ningtonUsers = ningtonLdapUserService.getAllUserUnderOU(_cmmpDIOU);
 
                 // Find not exists
                 List<String> _onlyExistsInExSMTPList = this.findDiffInUserLists(_exUsers, _ningtonUsers, ACTION_NOT_EXISTS_IN_EX_ONLY);
@@ -88,7 +110,7 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
                 }
             }
 
-            for (String _ou : propertiesCmmpSync.getSourceBases() ) {
+            for (String _ou : propertiesCmmpSync.getBasesOU() ) {
 
                 List<CMMPExchangeLdapGroup> _exGroups = exchangeLdapQueryService.getAllGroupUnderOU(_ou);
 
@@ -154,5 +176,33 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
         return _result;
     }
 
+    /**
+     * Translate the source OU path from CMMP format into CMMP-DI format
+     *
+     * @param source
+     * @param cmmpBaseOu
+     * @param cmmpdiBaseOu
+     * @return
+     */
+    private String convertDnFromCMMP2CMMPDI(String source, String cmmpBaseOu, String cmmpdiBaseOu) {
+        if (source == null || cmmpBaseOu == null || cmmpdiBaseOu == null) {
+            throw new IllegalArgumentException("DN inputs must not be null");
+        }
+
+        String result = source.trim();
+        String oldBase = cmmpBaseOu.trim();
+        String newBase = cmmpdiBaseOu.trim();
+
+        // 1. Replace the trailing base DN (case-insensitive)
+        String baseRegex = "(?i)(^|,)" + Pattern.quote(oldBase) + "$";
+        result = result.replaceFirst(baseRegex, "$1" + newBase);
+
+        // 2. Transform the specific OU segments above the base DN
+        result = result
+                .replaceFirst("(?i)(^|,)OU=Users,", "$1OU=User,")
+                .replaceFirst("(?i)(^|,)OU=CMMPBDOs,", "$1OU=CMMPDI-BDOs,");
+
+        return result;
+    }
 
 }

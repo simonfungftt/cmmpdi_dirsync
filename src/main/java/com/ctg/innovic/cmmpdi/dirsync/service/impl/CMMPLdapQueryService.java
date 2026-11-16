@@ -16,8 +16,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
+import org.springframework.ldap.support.LdapUtils;
 import org.springframework.stereotype.Service;
 
+import javax.naming.directory.DirContext;
 import java.time.Instant;
 import java.util.List;
 
@@ -82,7 +84,8 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
     public List<CMMPExchangeLdapUser> getAllUserUnderOU(@NotNull String pOU) {
 
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         return this.getLastModifiedUserUnderOU(pOU, Instant.EPOCH);
     }
@@ -97,25 +100,28 @@ public class CMMPLdapQueryService implements CMMPLdapService {
      */
     public List<CMMPExchangeLdapUser> getLastModifiedUserUnderOU(@NotNull String pOU, @NotNull Instant pLastSyncTime) {
 
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         // Define your target timestamp
         String formattedTime = dataSyncManager.getLogFormat(pLastSyncTime);
 
-        logger.log(Level.INFO, "Trying to fetch CMMP users under OU %s and modified time after %s", pOU, formattedTime);
+        _logMessage = String.format("Trying to fetch CMMP users under OU %s and modified time after %s", pOU, formattedTime);
+        logger.log(Level.INFO, _logMessage);
 
-        // TODO: change this OU
         LdapQuery _query = LdapQueryBuilder.query()
-                .base(pOU /*"OU=Users,OU=ITB-OGCIO,OU=CMMPBDOs"*/)
+                .base(pOU)
                 .where("objectClass").is("user").and("whenChanged").gte(formattedTime);
 
-        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
+        _logMessage = String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter());
+        logger.log(Level.DEBUG, _logMessage);
 
         List<CMMPExchangeLdapUser> _result = ldapTemplate.find(
             _query, CMMPExchangeLdapUser.class
         );
 
-        logger.log(Level.INFO, String.format("%05d users have been fetched from CMMP", _result.size()));
+        _logMessage = String.format("%05d users have been fetched from CMMP", _result.size());
+        logger.log(Level.INFO, _logMessage);
 
         return _result;
     }
@@ -145,12 +151,14 @@ public class CMMPLdapQueryService implements CMMPLdapService {
      */
     public List<CMMPExchangeLdapGroup> getLastModifiedGroupUnderOU(@NotNull String pOU, @NotNull Instant pLastSyncTime) {
 
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         // Define your target timestamp
         String formattedTime = dataSyncManager.getLogFormat(pLastSyncTime);
 
-        logger.log(Level.INFO, "Trying to fetch CMMP groups under OU %s and modified time after %s", pOU, formattedTime);
+        _logMessage = String.format("Trying to fetch CMMP groups under OU %s and modified time after %s", pOU, formattedTime);
+        logger.log(Level.INFO, _logMessage);
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base(pOU /*"OU=Users,OU=ITB-OGCIO,OU=CMMPBDOs"*/)

@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,9 @@ import org.springframework.stereotype.Component;
 public class ConsolidateWGDRunner implements ApplicationRunner {
 
     private static Logger logger = LogManager.getLogger(ConsolidateWGDRunner.class);
+
+    @Value("${input.user.inputFileDirectory}")
+    private String contactInputFileDirectory;
 
     @Autowired
     private PropertiesCmmpSync propertiesCmmpSync;
@@ -42,10 +46,11 @@ public class ConsolidateWGDRunner implements ApplicationRunner {
              * (b.iii). If a user object in WGD by not in BDO OU, remove it
              */
 
-            logger.log(Level.INFO, String.format("Start WGD consolidation process in CMMP-DI..."));
+            String _logMessage = "Start WGD consolidation process in CMMP-DI...";
+            logger.log(Level.INFO, _logMessage);
 
             // (a). Read CMMP-DI directory information into memory
-            cmmpdiLdapCacheService.initCMMPDI();
+            cmmpdiLdapCacheService.initCMMPDIBDO();
             cmmpdiLdapCacheService.initCMMPDIWGD();
 
             try {
@@ -54,11 +59,13 @@ public class ConsolidateWGDRunner implements ApplicationRunner {
             catch (Exception e) {
                 e.printStackTrace();
             }
-/*
+
             try {
                 cmmpdiLdapWGDService.syncWGDGroups();
             }
-            catch (Exception e) {}*/
+            catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

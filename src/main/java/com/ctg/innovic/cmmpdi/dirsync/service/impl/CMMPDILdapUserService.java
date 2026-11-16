@@ -14,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.query.LdapQuery;
@@ -47,6 +48,15 @@ import java.util.List;
 public class CMMPDILdapUserService {
 
     private static final Logger logger = LogManager.getLogger(CMMPDILdapUserService.class);
+
+    @Value("${cmmpdi.bdo.baseOU}")
+    private String cmmpdiBDOBaseOU;
+
+    @Value("${cmmpdi.wgd.baseOU}")
+    private String cmmpdiWGDBaseOU;
+
+    @Value("${execution.dryrun}")
+    private boolean executionDryrun;
 
     @Autowired
     private CMMPDILdapCacheService cmmpdiLdapCacheService;
@@ -101,7 +111,8 @@ public class CMMPDILdapUserService {
 
     private CMMPDILdapUser transformFromCMMPExchangeLdapUser2CMMPDILdapUser(CMMPExchangeLdapUser pCMMPExchangeLdapUser) throws InvalidNameException {
 
-        logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         CMMPDILdapUser _cmmpdiLdapUser = this.cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(pCMMPExchangeLdapUser.getMail());
 
@@ -117,6 +128,12 @@ public class CMMPDILdapUserService {
         _cmmpdiLdapUser.setDistinguishedName( pCMMPExchangeLdapUser.getDistinguishedName() );
         _cmmpdiLdapUser.setEmail( pCMMPExchangeLdapUser.getMail() );
 
+        if ( pCMMPExchangeLdapUser.getProxyAddresses() != null && pCMMPExchangeLdapUser.getProxyAddresses().length > 0 ) {
+
+            String _proxyAddress = String.join(",", pCMMPExchangeLdapUser.getProxyAddresses());
+            _cmmpdiLdapUser.setProxyAddresses( _proxyAddress );
+        }
+
         _cmmpdiLdapUser.setUserCert( new String(pCMMPExchangeLdapUser.getUserCert(), StandardCharsets.UTF_8) );
         _cmmpdiLdapUser.setgCert( new String(pCMMPExchangeLdapUser.getUserCertificate(), StandardCharsets.UTF_8) );
 
@@ -129,21 +146,22 @@ public class CMMPDILdapUserService {
 
 
 
-    public List<CMMPDILdapUser> getAllUserUnderOU(@com.unboundid.util.NotNull String pOU) {
+    public List<CMMPDILdapUser> getAllUserUnderOU(@NotNull String pOU) {
 
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
-        logger.log(Level.INFO, "Trying to fetch nington users under OU %s", pOU);
+        _logMessage = String.format("Trying to fetch nington users under OU %s", pOU);
+        logger.log(Level.INFO, _logMessage);
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base(pOU)
                 .where("objectClass").is("user");
 
-        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
+        _logMessage = String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter());
+        logger.log(Level.DEBUG, _logMessage);
 
-        List<CMMPDILdapUser> _result = ldapTemplate.find(
-                _query, CMMPDILdapUser.class
-        );
+        List<CMMPDILdapUser> _result = ldapTemplate.find(_query, CMMPDILdapUser.class);
 
         logger.log(Level.INFO, String.format("%05d users have been fetched from nington", _result.size()));
 
@@ -160,7 +178,8 @@ public class CMMPDILdapUserService {
      */
     public boolean createOrUpdateCMMPDIUser(@NotNull CMMPExchangeLdapUser pCMMPExchangeLdapUser) throws InvalidNameException {
 
-        logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         boolean _result = false;
 
@@ -210,7 +229,8 @@ public class CMMPDILdapUserService {
      */
     protected boolean createCMMPDIUser(CMMPExchangeLdapUser pCMMPExchangeLdapUser) throws InvalidNameException {
 
-        CMMPDILdapUser pCMMPDILdapUser = this.transformFromCMMPExchangeLdapUser2CMMPDILdapUser(pCMMPExchangeLdapUser);
+        CMMPDILdapUser pCMMPDILdapUser
+                = this.transformFromCMMPExchangeLdapUser2CMMPDILdapUser(pCMMPExchangeLdapUser);
 
         return createCMMPDIUser(pCMMPDILdapUser);
     }
@@ -225,7 +245,8 @@ public class CMMPDILdapUserService {
                 .add("cn", "wgd_" + getLocalPart(pCMMPDILdapUser.getEmail()))
                 .build();
 
-        logger.debug("Generate DN = " + dn.toString());
+        String _logMessage = "Generate DN = " + dn.toString();
+        logger.log(Level.DEBUG, _logMessage);
 
         // 2. Prepare the context with objectClasses and attributes
         DirContextAdapter context = new DirContextAdapter(dn);
@@ -238,41 +259,66 @@ public class CMMPDILdapUserService {
         context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "user");
 
 
-        context.addAttributeValue("ouPath", "/");
-        context.addAttributeValue("ouPath", "/CMMPDI-BDOs");
-        context.addAttributeValue("ouPath", "/CMMPDI-BDOs/WGD");
-        context.addAttributeValue("ouPath", "/CMMPDI-BDOs/WGD/User");
+        context.addAttributeValue(Constants.LDAP_FIELD_OUPATH, "/");
+        context.addAttributeValue(Constants.LDAP_FIELD_OUPATH, "/CMMPDI-BDOs");
+        context.addAttributeValue(Constants.LDAP_FIELD_OUPATH, "/CMMPDI-BDOs/WGD");
+        context.addAttributeValue(Constants.LDAP_FIELD_OUPATH, "/CMMPDI-BDOs/WGD/User");
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss.S'Z'");
 
-        context.setAttributeValue("whenCreated", sdf.format(new Date()));
-        context.setAttributeValue("whenChanged", sdf.format(new Date()));
+        context.setAttributeValue(Constants.LDAP_FIELD_WHENCREATED, sdf.format(new Date(pCMMPDILdapUser.getWhenCreatedInstant().toEpochMilli())));
+        context.setAttributeValue(Constants.LDAP_FIELD_WHENCHANGED, sdf.format(new Date(pCMMPDILdapUser.getWhenChangedInstant().toEpochMilli())));
 
-//        context.addAttributeValue();
-        context.setAttributeValue("instanceType", "4");
-        context.setAttributeValue("cn", "wgd_" + getLocalPart(pCMMPDILdapUser.getEmail()));
-        context.setAttributeValue("sn", pCMMPDILdapUser.getSurname());
-        context.setAttributeValue("givenName", pCMMPDILdapUser.getFirstName());
+        //context.setAttributeValue("instanceType", "4");
+        context.setAttributeValue(Constants.LDAP_FIELD_CN, "wgd_" + getLocalPart(pCMMPDILdapUser.getEmail()));
+        context.setAttributeValue(Constants.LDAP_FIELD_SN, pCMMPDILdapUser.getSurname());
+        context.setAttributeValue(Constants.LDAP_FIELD_TITLE, pCMMPDILdapUser.getTitle());
+        context.setAttributeValue(Constants.LDAP_FIELD_DESCRIPTION, pCMMPDILdapUser.getDistinguishedName());
+
+        context.addAttributeValue(Constants.LDAP_FIELD_PROXY_ADDRESS, pCMMPDILdapUser.getProxyAddresses());
+
+        context.setAttributeValue(Constants.LDAP_FIELD_GIVEN_NAME, pCMMPDILdapUser.getFirstName());
         context.setAttributeValue(Constants.LDAP_FIELD_DISPLAY_NAME, pCMMPDILdapUser.getDisplayName());
-        context.setAttributeValue("distinguishedName", dn + ",dc=cmmp-di-test,dc=ctg");
-        context.setAttributeValue("mail", pCMMPDILdapUser.getEmail());
 
-        //context.addAttributeValue();
+        context.setAttributeValue(Constants.LDAP_FIELD_EXT1, String.valueOf(pCMMPDILdapUser.getExtensionAttribute1()));
 
-        logger.info("context = " + context);
+        context.setAttributeValue(Constants.LDAP_FIELD_CERT17, pCMMPDILdapUser.getUserCert17());
+        context.setAttributeValue(Constants.LDAP_FIELD_CERT18, pCMMPDILdapUser.getUserCert18());
+        context.setAttributeValue(Constants.LDAP_FIELD_GCERT, pCMMPDILdapUser.getgCert());
+        context.setAttributeValue(Constants.LDAP_FIELD_ECERT, pCMMPDILdapUser.getUserCert());
 
-        try {
-            Path path = Paths.get("wgd.ldif");
-            Files.writeString(path, LdifUtils.toLdif(context) );
-        } catch (NamingException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        context.setAttributeValue(Constants.LDAP_FIELD_DISTINGUISHEDNAME, dn.toString());
+        context.setAttributeValue(Constants.LDAP_FIELD_MAIL, pCMMPDILdapUser.getEmail());
+
+        String _logContext =  "context = " + context;
+        logger.log(Level.DEBUG, _logContext);
+
+        if ( logger.isDebugEnabled() ) {
+
+            try {
+                Path path = Paths.get("wgd_" + getLocalPart(pCMMPDILdapUser.getEmail()) + ".ldif");
+                Files.writeString(path, LdifUtils.toLdif(context));
+            } catch (NamingException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
-        this.ldapTemplate.bind(context);
+        try {
+            this.ldapTemplate.bind(context);
+            this.cmmpdiLdapCacheService.addUserCache(pCMMPDILdapUser.getEmail());
+        }
+        catch (org.springframework.ldap.NameAlreadyBoundException
+                | org.springframework.ldap.UncategorizedLdapException e) {
+            if (e.getMessage() != null && e.getMessage().contains("already exists")) {
+                logger.log(Level.WARN, "WGD user {} already exists in target LDAP, skipping creation.", dn);
+                return false;
+            }
+            //throw e;
+        }
 
-        this.cmmpdiLdapCacheService.addUserCache(pCMMPDILdapUser.getEmail());
+
 
         return true;
     }
@@ -349,16 +395,17 @@ public class CMMPDILdapUserService {
 
     public boolean deleteCMMPDIUserByDN(@NotNull CMMPDILdapUser pCMMPDILdapUser) {
 
-        logger.debug(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         Name dn = LdapNameBuilder.newInstance(pCMMPDILdapUser.getDn()).build();
 
-        logger.log(Level.INFO,
-                String.format(
-                    "Going to delete user object with DN '%s' from WGD", dn
-                ));
+        _logMessage =  String.format("Going to delete user object with DN '%s' from WGD", dn);
+        logger.log(Level.INFO, _logMessage);
 
-        this.ldapTemplate.unbind(dn);
+        if ( this.executionDryrun == false ) {
+            this.ldapTemplate.unbind(dn);
+        }
 
         return true;
     }

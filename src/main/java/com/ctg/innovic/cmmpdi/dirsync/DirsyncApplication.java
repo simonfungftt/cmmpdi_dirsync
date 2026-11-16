@@ -14,9 +14,13 @@ public class DirsyncApplication {
 		// Disable LDAP Endpoint Identification / SAN verification
 		System.setProperty("com.sun.jndi.ldap.object.disableEndpointIdentification", "true");
 
+		/*
+		 * There are entry points under package
+		 * com.ctg.innovic.cmmpdi.dirsync.runner and to be triggered by input arg
+		 */
+
 		SpringApplication application = new SpringApplication(DirsyncApplication.class);
 		application.setBannerMode(Banner.Mode.OFF);
 		application.run(args);
 	}
-
 }

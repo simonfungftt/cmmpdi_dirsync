@@ -10,17 +10,22 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.naming.InvalidNameException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 @Service
 public class CMMPDILdapWGDService {
 
     private final static Logger logger = LogManager.getLogger(CMMPDILdapWGDService.class);
+
+    @Value("${execution.dryrun}")
+    private boolean executionDryrun;
 
     @Autowired
     private CMMPDILdapCacheService cmmpdiLdapCacheService;
@@ -29,15 +34,22 @@ public class CMMPDILdapWGDService {
     private CMMPDILdapUserService cmmpdiLdapUserService;
 
 
+    /**
+     * Fetch WGD users which smtp address matches searchKey
+     * @param searchKey
+     * @return
+     */
     private List<CMMPDILdapUser> getWGDUserInWGDOU(@NotNull String searchKey) {
 
         List<CMMPDILdapUser> _result = new ArrayList<>();
+
+        String _lowerCaseSearchKey = searchKey.toLowerCase();
 
         for ( CMMPDILdapUser _user : this.cmmpdiLdapCacheService.getWGDUsersFromWGDFromCache() ) {
 
             String _email = StringUtils.trimToEmpty(_user.getEmail());
 
-            if ( _email.toLowerCase().startsWith(searchKey.toLowerCase() ) ) {
+            if ( _email.toLowerCase().startsWith(_lowerCaseSearchKey) ) {
                 _result.add(_user);
             }
         }
@@ -46,16 +58,23 @@ public class CMMPDILdapWGDService {
     }
 
 
+
+    /**
+     * Fetch BDO users (whcih should be in WGD) which smtp address matches searchKey
+     * @param searchKey
+     * @return
+     */
     private List<CMMPDILdapUser> getWGDUserInBDOOU(@NotNull String searchKey) {
 
         List<CMMPDILdapUser> _result = new ArrayList<>();
+
+        String _lowerCaseSearchKey = searchKey.toLowerCase();
 
         for ( CMMPDILdapUser _user : this.cmmpdiLdapCacheService.getAllBDOUsersFromBDOFromCache() ) {
 
             String _email = StringUtils.trimToEmpty(_user.getEmail());
 
-            if ( _email.toLowerCase().startsWith( searchKey.toLowerCase() ) ) {
-
+            if ( _email.toLowerCase().startsWith( _lowerCaseSearchKey ) ) {
                 if ( _user.getExtensionAttribute7() == 1 ) {
                     _result.add(_user);
                 }
@@ -66,9 +85,10 @@ public class CMMPDILdapWGDService {
     }
 
 
-    protected void syncWGDUser(String pSearchKey) throws InvalidNameException {
+    protected void syncWGDUserBySearchKey(String pSearchKey) throws InvalidNameException {
 
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         List<CMMPDILdapUser> _bdoUsers = getWGDUserInBDOOU(pSearchKey);
 
@@ -77,65 +97,57 @@ public class CMMPDILdapWGDService {
         List<CMMPDILdapUser> _inWGDButNotInBDO = (List<CMMPDILdapUser>) CollectionUtils.subtract(_wgdUsers, _bdoUsers);
 
         for ( CMMPDILdapUser wgdUser : _inWGDButNotInBDO ){
+            _logMessage = wgdUser.getEmail() + " could not be found in BDO OUs, removing WGD user by DN " + wgdUser.getDn();
+            logger.log(Level.INFO, _logMessage);
             this.cmmpdiLdapUserService.deleteCMMPDIUserByDN(wgdUser);
         }
 
         List<CMMPDILdapUser> _inBDOButNotInWGD = (List<CMMPDILdapUser>) CollectionUtils.subtract(_bdoUsers, _wgdUsers);
 
         for ( CMMPDILdapUser bdoUser : _inBDOButNotInWGD ){
+            _logMessage = bdoUser.getEmail() + " could not be found in WGD OUs, adding BDO user into WGD";
+            logger.log(Level.INFO, _logMessage);
+            this.cmmpdiLdapUserService.createWGDCMMPDIUser(bdoUser);
+        }
+
+        List<CMMPDILdapUser> unionUserList = new ArrayList<>(CollectionUtils.intersection(_bdoUsers, _wgdUsers));
+
+        for ( CMMPDILdapUser bdoUser : unionUserList ){
+            _logMessage = bdoUser.getEmail() + " found in both BDO and WGD OU, updating from BDO";
+            logger.log(Level.INFO, _logMessage);
             this.cmmpdiLdapUserService.createWGDCMMPDIUser(bdoUser);
         }
     }
 
 
     public void syncWGDGroups() throws InvalidNameException {
-
-        int length = 3;
-        char[] chars = new char[length];
-        Arrays.fill(chars, 'a');
-
-        while (true) {
-            String searchKey = new String(chars);
-            //syncWGDUser(searchKey);
-
-            // Increment characters from right to left (like an odometer)
-            int index = length - 1;
-            while (index >= 0 && chars[index] == 'z') {
-                chars[index] = 'a';
-                index--;
-            }
-
-            // Reached "zzz" and wrapped around to the beginning
-            if (index < 0) {
-                break;
-            }
-
-            chars[index]++;
-        }
+        syncWGDObjects(Constants.WGD_OPERATION_GROUP);
     }
 
 
     public void syncWGDUsers() throws InvalidNameException {
-        syncWGDUsers(Constants.WGD_OPERATION_USER);
+        syncWGDObjects(Constants.WGD_OPERATION_USER);
     }
 
 
-    private void syncWGDUsers(int mode) throws InvalidNameException {
+    private void syncWGDObjects(int mode) throws InvalidNameException {
 
-        int length = 3;
+        int length = 2;
         char[] chars = new char[length];
         Arrays.fill(chars, 'a');
 
         while (true) {
             String searchKey = new String(chars);
 
-            logger.log(Level.DEBUG, String.format("Handling searchKey %s", searchKey));
+            String _log = String.format("Handling searchKey %s", searchKey);
+            logger.log(Level.TRACE, _log);
 
             if ( Constants.WGD_OPERATION_USER == mode) {
-                syncWGDUser(searchKey);
+                syncWGDUserBySearchKey(searchKey);
             }
             else if ( Constants.WGD_OPERATION_GROUP == mode) {
-                syncWGDUser(searchKey);
+                // TODO
+                //syncWGDUserBySearchKey(searchKey);
             }
 
             // Increment characters from right to left (like an odometer)

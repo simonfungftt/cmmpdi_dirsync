@@ -58,9 +58,6 @@ public class DataImportService {
 
             for (ExchangeADUser _user : _users) {
 
-                Gson gson = new GsonBuilder().setFormattingStyle(FormattingStyle.COMPACT).create();
-
-                //logger.debug( gson.toJson(_user) );
             }
         }
         catch (IOException e) {

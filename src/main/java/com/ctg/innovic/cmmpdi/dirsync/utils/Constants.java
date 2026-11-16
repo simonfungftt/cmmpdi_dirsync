@@ -9,6 +9,8 @@ public class Constants {
     public static final String ARGS_FULL = "full";
     public static final String ARGS_WGD = "wgd";
 
+//    public static final String EXEC_DRYRUN =
+
     public static final String LOGGING_ENTERING = "Entering ";
     public static final String LOGGER_LDAPQUERY_DEBUG = "LDAP Base DN: %s, filter: %s";
 
@@ -23,10 +25,15 @@ public class Constants {
     public static final String LDAP_BASE_OU_BDO = "ou=bdo,ou=cmmpdi-bdos";
     public static final String LDAP_BASE_OU_WGD = "ou=wgd,ou=cmmpdi-bdos";
 
+
+    public static final String LDAP_FIELD_OUPATH = "ouPath";
     public static final String LDAP_FIELD_OBJECT_CLASS = "objectClass";
     public static final String LDAP_FIELD_DISPLAY_NAME = "displayName";
+    public static final String LDAP_FIELD_DISTINGUISHEDNAME = "distinguishedName";
+    public static final String LDAP_FIELD_SN = "sn";
     public static final String LDAP_FIELD_CN = "cn";
     public static final String LDAP_FIELD_MAIL = "mail";
+    public static final String LDAP_FIELD_TITLE = "title";
     public static final String LDAP_FIELD_GIVEN_NAME = "givenName";
     public static final String LDAP_FIELD_PROXY_ADDRESS = "proxyAddresses";
     public static final String LDAP_FIELD_DESCRIPTION = "description";
@@ -39,7 +46,9 @@ public class Constants {
     public static final String LDAP_FIELD_ECERT = "userCert";
     public static final String LDAP_FIELD_CERT17 = "userCert17";
     public static final String LDAP_FIELD_CERT18 = "userCert18";
+    public static final String LDAP_FIELD_WHENCREATED = "whenCreated";
     public static final String LDAP_FIELD_WHENCHANGED = "whenChanged";
+
 
     public static final int WGD_OPERATION_USER = 1;
     public static final int WGD_OPERATION_GROUP = 2;

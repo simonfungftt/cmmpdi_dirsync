@@ -6,22 +6,17 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-@ConfigurationProperties(prefix = "cmmp.sync")
+@ConfigurationProperties(prefix = "cmmp.bases")
 public class PropertiesCmmpSync {
 
     // You can use String[] or List<String>
-    private List<String> sourceBases;
+    private List<String> basesOU;
 
-    public List<String> getSourceBases() {
-        return sourceBases;
+    public List<String> getBasesOU() {
+        return basesOU;
     }
 
-    public void setSourceBases(List<String> sourceBases) {
-        this.sourceBases = sourceBases;
-    }
-
-    // Convenience helper if you strictly need an array:
-    public String[] getSourceBasesAsArray() {
-        return sourceBases != null ? sourceBases.toArray(new String[0]) : new String[0];
+    public void setBasesOU(List<String> basesOU) {
+        this.basesOU = basesOU;
     }
 }

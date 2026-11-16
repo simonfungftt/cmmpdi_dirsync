@@ -49,17 +49,20 @@ public class DeltaSyncCMMP2CMMPDIRunner implements ApplicationRunner {
 
             logger.log(Level.INFO, String.format("Last delta sync time up to %s", dataSyncManager.getLogFormat(_lastDataSyncTime)));
 
-            for (String _ou : propertiesCmmpSync.getSourceBases() ) {
+            for (String _ou : propertiesCmmpSync.getBasesOU() ) {
+
+                String _userOU = "OU=Users," + _ou;
 
                 // LDAP seach or by reading text file
-                List<CMMPExchangeLdapUser> _exUsers = cmmpLdapQueryService.getLastModifiedUserUnderOU(_ou, _lastDataSyncTime);
+                List<CMMPExchangeLdapUser> _exUsers
+                        = cmmpLdapQueryService.getLastModifiedUserUnderOU(_userOU, _lastDataSyncTime);
 //
 //                for ( CMMPExchangeLdapUser _exUser : _exUsers ) {
 //                    cmmpdiLdapUserService.createOrUpdateCMMPDIUser(_exUser);
 //                }
             }
 
-            for (String _ou : propertiesCmmpSync.getSourceBases() ) {
+            for (String _ou : propertiesCmmpSync.getBasesOU() ) {
 
 //                List<CMMPExchangeLdapGroup> _exGroups = cmmpLdapQueryService.getLastModifiedGroupUnderOU(_ou, _lastDataSyncTime);
 //

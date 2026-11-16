@@ -1,26 +1,72 @@
 package com.ctg.innovic.cmmpdi.dirsync.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.springframework.ldap.odm.annotations.Attribute;
+import org.springframework.ldap.odm.annotations.Id;
+
 import java.time.Instant;
 
 public class CMMPExchangeLdapUser {
 
+    @Id
+    @JsonIgnore
     private String dn;
+
+    @Attribute(name = "cn")
     private String cn;
+
+    @Attribute(name = "sn")
     private String sn;
+
+    @Attribute(name = "givenName")
     private String givenName;
+
+    @Attribute(name = "mail")
     private String mail;
+
+    @Attribute(name = "distinguishedName")
     private String distinguishedName;
+
+    @Attribute(name = "displayName")
     private String displayName;
-    private String proxyAddresses;
+
+    @Attribute(name = "proxyAddresses")
+    private String[] proxyAddresses;
+
+    @Attribute(name = "title")
     private String title;
+
+    @Attribute(name = "countryCode")
     private int countryCode;
+
+    @Attribute(name = "userCert")
     private byte[] userCert;
+
+    @Attribute(name = "userSMIMECertificate")
     private byte[] userSMIMECertificate;
+
+    @Attribute(name = "userCertificate")
     private byte[] userCertificate;
+
+    @Attribute(name = "extensionAttribute1")
     private int extensionAttribute1;
+
+    @Attribute(name = "extensionAttribute4")
     private int extensionAttribute4;
+
+    @Attribute(name = "extensionAttribute3")
     private int extensionAttribute3;
+
+    @Attribute(name = "extensionAttribute7")
     private int extensionAttribute7;
+
+    @Attribute(name = "description")
+    private String description;
+
+    @Attribute(name = "wWWHomePage")
+    private int wWWHomePage;
+
+    @Attribute(name = "msExchAddressBookFlags")
     private int msExchAddressBookFlags;
 
     private Instant whenChanged;
@@ -51,6 +97,73 @@ public class CMMPExchangeLdapUser {
         this.dn = dn;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public int getCountryCode() {
+        return countryCode;
+    }
+
+    public int getExtensionAttribute4() {
+        return extensionAttribute4;
+    }
+
+    public int getMsExchAddressBookFlags() {
+        return msExchAddressBookFlags;
+    }
+
+    public String[] getProxyAddresses() {
+        return proxyAddresses;
+    }
+
+    public int getwWWHomePage() {
+        return wWWHomePage;
+    }
+
+    public byte[] getUserSMIMECertificate() {
+        return userSMIMECertificate;
+    }
+
+    public void setProxyAddresses(String[] proxyAddresses) {
+        this.proxyAddresses = proxyAddresses;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setUserCert(byte[] userCert) {
+        this.userCert = userCert;
+    }
+
+    public void setExtensionAttribute1(int extensionAttribute1) {
+        this.extensionAttribute1 = extensionAttribute1;
+    }
+
+    public void setExtensionAttribute3(int extensionAttribute3) {
+        this.extensionAttribute3 = extensionAttribute3;
+    }
+
+    public void setExtensionAttribute7(int extensionAttribute7) {
+        this.extensionAttribute7 = extensionAttribute7;
+    }
+
+    public void setExtensionAttribute4(int extensionAttribute4) {
+        this.extensionAttribute4 = extensionAttribute4;
+    }
+
+    public void setMsExchAddressBookFlags(int msExchAddressBookFlags) {
+        this.msExchAddressBookFlags = msExchAddressBookFlags;
+    }
+
+    public void setwWWHomePage(int wWWHomePage) {
+        this.wWWHomePage = wWWHomePage;
+    }
 
     public String getDistinguishedName() {
         return distinguishedName;
