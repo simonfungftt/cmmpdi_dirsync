@@ -67,13 +67,6 @@ public class CMMPDILdapCacheService {
             if ( _user.getEmail() != null ) {
                 cmmpdiUserSMTP2DnMap.put(_user.getEmail().toLowerCase(), _user);
             }
-
-            String _buffer
-                    = String.format("BDO User SMTP address = %s, whenCreated = %s and whenUpdated = %s", _user.getEmail(),
-                    _user.getWhenCreated(),
-                    _user.getWhenChanged()
-                    );
-            //logger.log(Level.DEBUG, _buffer);
         }
 
         _logMessage = this.cmmpdiUserSMTP2DnMap.size()+ " user entries had been initialised...";

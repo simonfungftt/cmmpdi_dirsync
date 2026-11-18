@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.ldap.support.LdapNameBuilder;
@@ -134,8 +135,13 @@ public class CMMPDILdapUserService {
             _cmmpdiLdapUser.setProxyAddresses( _proxyAddress );
         }
 
-        _cmmpdiLdapUser.setUserCert( new String(pCMMPExchangeLdapUser.getUserCert(), StandardCharsets.UTF_8) );
-        _cmmpdiLdapUser.setgCert( new String(pCMMPExchangeLdapUser.getUserCertificate(), StandardCharsets.UTF_8) );
+        if ( pCMMPExchangeLdapUser.getUserCert() != null ) {
+            _cmmpdiLdapUser.setUserCert(new String(pCMMPExchangeLdapUser.getUserCert(), StandardCharsets.UTF_8));
+        }
+
+        if ( pCMMPExchangeLdapUser.getUserCertificate() != null ) {
+            _cmmpdiLdapUser.setgCert(new String(pCMMPExchangeLdapUser.getUserCertificate(), StandardCharsets.UTF_8));
+        }
 
         _cmmpdiLdapUser.setExtensionAttribute1( pCMMPExchangeLdapUser.getExtensionAttribute1() );
         _cmmpdiLdapUser.setExtensionAttribute3( pCMMPExchangeLdapUser.getExtensionAttribute3() );
@@ -151,6 +157,10 @@ public class CMMPDILdapUserService {
         String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
         logger.log(Level.TRACE, _logMessage);
 
+        LdapContextSource activeCtx = (LdapContextSource) ldapTemplate.getContextSource();
+        logger.log(Level.DEBUG, "ACTIVE QUERY CONTEXT -> URL=" + activeCtx.getUrls()[0]
+                + " | UserDn=" + activeCtx.getUserDn());
+
         _logMessage = String.format("Trying to fetch nington users under OU %s", pOU);
         logger.log(Level.INFO, _logMessage);
 
@@ -163,7 +173,8 @@ public class CMMPDILdapUserService {
 
         List<CMMPDILdapUser> _result = ldapTemplate.find(_query, CMMPDILdapUser.class);
 
-        logger.log(Level.INFO, String.format("%05d users have been fetched from nington", _result.size()));
+        _logMessage = String.format("%05d users have been fetched from nington", _result.size());
+        logger.log(Level.INFO, _logMessage);
 
         return _result;
     }
@@ -192,13 +203,14 @@ public class CMMPDILdapUserService {
             logger.log(Level.INFO,
                     String.format(
                             "Going to create object with SMTP address = %s, original DN = %s",
-                            pCMMPExchangeLdapUser.getMail(), pCMMPExchangeLdapUser.getDn()));
+                            pCMMPExchangeLdapUser.getMail().toLowerCase(), pCMMPExchangeLdapUser.getDn()));
 
             _result = this.createCMMPDIUser(pCMMPExchangeLdapUser);
         }
         else if ( _user == null && _group != null ) {
 
-            logger.info("Going to remove object " + _group.getRealDn()
+            logger.log(Level.INFO,
+                    "Going to remove object " + _group.getRealDn()
                     + " due to SMTP address " + pCMMPExchangeLdapUser.getMail()
                     + " conflict with users...");
 
@@ -212,8 +224,6 @@ public class CMMPDILdapUserService {
             // Update case
             _result = this.updateCMMPDIUser(pCMMPExchangeLdapUser);
         }
-
-
 
         return _result;
     }
@@ -342,11 +352,13 @@ public class CMMPDILdapUserService {
         builder.add("cn", getLocalPart(pCMMPDILdapUser.getEmail()));
         Name dn = builder.build();
 
-        logger.debug("Generate DN = " + dn.toString());
+        String _logMessage = "Generate DN = " + dn.toString();
+        logger.log(Level.DEBUG, _logMessage);
 
         // 2. Prepare the context with objectClasses and attributes
         DirContextAdapter context = new DirContextAdapter(dn);
 
+        context.setUpdateMode(false);
         context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "top");
         context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "person");
         context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "organizationalPerson");
@@ -358,10 +370,10 @@ public class CMMPDILdapUserService {
         context.addAttributeValue(Constants.LDAP_FIELD_GIVEN_NAME, pCMMPDILdapUser.getFirstName());
         context.addAttributeValue(Constants.LDAP_FIELD_DISPLAY_NAME, pCMMPDILdapUser.getDisplayName());
         context.addAttributeValue("distinguishedName", pCMMPDILdapUser.getDistinguishedName());
-        context.addAttributeValue(Constants.LDAP_FIELD_MAIL, pCMMPDILdapUser.getEmail());
-        context.addAttributeValue(Constants.LDAP_FIELD_EXT1, pCMMPDILdapUser.getExtensionAttribute1());
-        context.addAttributeValue(Constants.LDAP_FIELD_EXT3, pCMMPDILdapUser.getExtensionAttribute3());
-        context.addAttributeValue(Constants.LDAP_FIELD_EXT7, pCMMPDILdapUser.getExtensionAttribute7());
+        context.addAttributeValue(Constants.LDAP_FIELD_MAIL, pCMMPDILdapUser.getEmail().toLowerCase());
+        context.addAttributeValue(Constants.LDAP_FIELD_EXT1, String.valueOf(pCMMPDILdapUser.getExtensionAttribute1()));
+        context.addAttributeValue(Constants.LDAP_FIELD_EXT3, String.valueOf(pCMMPDILdapUser.getExtensionAttribute3()));
+        context.addAttributeValue(Constants.LDAP_FIELD_EXT7, String.valueOf(pCMMPDILdapUser.getExtensionAttribute7()));
 
 //        context.addAttributeValue(Constants.LDAP_FIELD_ECERT, pCMMPDILdapUser.getE);
 
@@ -371,7 +383,7 @@ public class CMMPDILdapUserService {
             this.ldapTemplate.bind(context);
         }
         catch (Exception e) {
-            // TODO
+            logger.log(Level.ERROR, e.getMessage());
         }
 
         this.cmmpdiLdapCacheService.addUserCache(pCMMPDILdapUser.getEmail());

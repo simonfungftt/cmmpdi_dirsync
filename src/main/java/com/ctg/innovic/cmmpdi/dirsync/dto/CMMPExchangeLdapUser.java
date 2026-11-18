@@ -2,15 +2,35 @@ package com.ctg.innovic.cmmpdi.dirsync.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.ldap.odm.annotations.Attribute;
+import org.springframework.ldap.odm.annotations.Entry;
 import org.springframework.ldap.odm.annotations.Id;
+import org.springframework.ldap.support.LdapUtils;
 
+import javax.naming.Name;
+import javax.naming.ldap.LdapName;
 import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 
+@Entry(objectClasses = {"top", "person", "organizationalPerson", "user"})
 public class CMMPExchangeLdapUser {
+
+
+    private static final DateTimeFormatter LDAP_GENERALIZED_TIME =
+            new DateTimeFormatterBuilder()
+                    .appendPattern("yyyyMMddHHmmss")
+                    .optionalStart()
+                    .appendFraction(ChronoField.MILLI_OF_SECOND, 1, 3, true)
+                    .optionalEnd()
+                    .appendOffset("+HHmm", "Z")
+                    .toFormatter();
+
 
     @Id
     @JsonIgnore
-    private String dn;
+    private LdapName dn;
 
     @Attribute(name = "cn")
     private String cn;
@@ -69,7 +89,57 @@ public class CMMPExchangeLdapUser {
     @Attribute(name = "msExchAddressBookFlags")
     private int msExchAddressBookFlags;
 
-    private Instant whenChanged;
+    @Attribute(name = "whenChanged", readonly = true)
+    private String whenChanged;
+
+    @Attribute(name = "whenCreated", readonly = true)
+    private String whenCreated;
+
+
+
+    public Instant getWhenCreatedInstant() {
+
+        Instant _instant = null;
+
+        try {
+            _instant = parseLdapTimestamp(whenCreated);
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            _instant = Instant.now();
+        }
+
+        return _instant;
+    }
+
+    public Instant getWhenChangedInstant() {
+        Instant _instant = null;
+
+        try {
+            _instant = parseLdapTimestamp(whenChanged);
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            _instant = Instant.now();
+        }
+
+        return _instant;
+    }
+
+    public String getWhenChanged() {
+        return whenChanged;
+    }
+
+    public String getWhenCreated() {
+        return whenCreated;
+    }
+
+    private static Instant parseLdapTimestamp(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        return ZonedDateTime.parse(raw, LDAP_GENERALIZED_TIME).toInstant();
+    }
 
 
     public String getMail() {
@@ -81,7 +151,7 @@ public class CMMPExchangeLdapUser {
     }
 
     public String getDn() {
-        return dn;
+        return this.dn.toString();
     }
 
     public void setCn(String cn) {
@@ -93,8 +163,18 @@ public class CMMPExchangeLdapUser {
     }
 
 
-    public void setDn(String dn) {
-        this.dn = dn;
+//    public void setDn(String dn) {
+//        this.dn = dn;
+//    }
+
+//    public Name getDn() {
+//        return dn;
+//    }
+
+    public void setDnString(String dnString) {
+        this.dn = (dnString != null && !dnString.isEmpty())
+                ? LdapUtils.newLdapName(dnString)
+                : null;
     }
 
     public String getDescription() {
@@ -233,11 +313,11 @@ public class CMMPExchangeLdapUser {
         return extensionAttribute3;
     }
 
-    public Instant getWhenChanged() {
-        return whenChanged;
+    public void setWhenChanged(String whenChanged) {
+        this.whenChanged = whenChanged;
     }
 
-    public void setWhenChanged(Instant whenChanged) {
-        this.whenChanged = whenChanged;
+    public void setWhenCreated(String whenCreated) {
+        this.whenCreated = whenCreated;
     }
 }

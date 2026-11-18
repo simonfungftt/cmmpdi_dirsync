@@ -4,6 +4,7 @@ import com.ctg.innovic.cmmpdi.dirsync.config.PropertiesCmmpSync;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapUser;
+import com.ctg.innovic.cmmpdi.dirsync.service.impl.CMMPDILdapCacheService;
 import com.ctg.innovic.cmmpdi.dirsync.service.impl.CMMPDILdapGroupService;
 import com.ctg.innovic.cmmpdi.dirsync.service.impl.CMMPDILdapUserService;
 import com.ctg.innovic.cmmpdi.dirsync.service.impl.CMMPLdapQueryService;
@@ -19,17 +20,19 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 @Component
 public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
 
     private static Logger logger = LogManager.getLogger(FullSyncCMMP2CMMPDIRunner.class);
 
-    private static final int ACTION_NOT_EXISTS_IN_EX_ONLY = 1;
+    private static final int ACTION_EXISTS_IN_EX_ONLY = 1;
     private static final int ACTION_BOTH_EXISTS = 2;
-    private static final int ACTION_NOT_EXISTS_IN_NL_ONLY = 3;
+    private static final int ACTION_EXISTS_IN_NL_ONLY = 3;
 
     @Autowired
     private DataSyncManager dataSyncManager;
@@ -45,6 +48,9 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
 
     @Autowired
     private CMMPDILdapGroupService cmmpdiLdapGroupService;
+
+    @Autowired
+    private CMMPDILdapCacheService cmmpdiLdapCacheService;
 
     @Value("${cmmpdi.bdo.baseOU}")
     private String cmmpdiBDOBaseOU;
@@ -64,34 +70,50 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
              * This process is to read CMMP LDAP information (by OU), and write into same OU
              */
 
-            for (String _ou : propertiesCmmpSync.getBasesOU() ) {
+            cmmpdiLdapCacheService.initCMMPDIBDO();
 
-                // As base OU does not contains the last OU, add it
+            for (String _ou : propertiesCmmpSync.getBases() ) {
+
+                // As base OU does not contains the User OU, so add it
                 String _userOU = "OU=Users," + _ou;
 
-                // Decode the CMMP OU into CMMP-DI as well
-                String _cmmpDIOU = convertDnFromCMMP2CMMPDI(_userOU, cmmpBDOBaseOU, cmmpdiBDOBaseOU);
+                // Translate the CMMP OU into CMMP-DI as well
+                String _cmmpDIUserOU = convertDnFromCMMP2CMMPDI(_userOU);
 
                 _logMessage
                         = String.format(
-                                "Scanning CMMP OU =%s prepare to write to %s, based on baseOU %s and %s",
-                                _userOU, _cmmpDIOU, cmmpBDOBaseOU, cmmpdiBDOBaseOU);
-
+                                "Scanning CMMP OU = %s and baseOU = %s, " +
+                                "prepare to write to CMMPDI OU = %s and baseOU = %s",
+                                _userOU, cmmpBDOBaseOU, _cmmpDIUserOU, cmmpdiBDOBaseOU);
                 logger.log(Level.INFO, _logMessage);
 
-                List<CMMPExchangeLdapUser> _exUsers = exchangeLdapQueryService.getAllUserUnderOU(_ou);
-                List<CMMPDILdapUser> _ningtonUsers = ningtonLdapUserService.getAllUserUnderOU(_cmmpDIOU);
+                List<CMMPExchangeLdapUser> _exUsers = exchangeLdapQueryService.getAllUserUnderOU(_userOU);
+                List<CMMPDILdapUser> _ningtonUsers = ningtonLdapUserService.getAllUserUnderOU(_cmmpDIUserOU);
 
                 // Find not exists
-                List<String> _onlyExistsInExSMTPList = this.findDiffInUserLists(_exUsers, _ningtonUsers, ACTION_NOT_EXISTS_IN_EX_ONLY);
+                List<String> _onlyExistsInExSMTPList = this.findDiffInUserLists(_exUsers, _ningtonUsers, ACTION_EXISTS_IN_EX_ONLY);
+
+                if ( logger.isDebugEnabled() ) {
+
+                    _logMessage = String.format("%4d records found to be exists in Exchange only but not nington", _onlyExistsInExSMTPList.size());
+                    logger.log(Level.DEBUG, _logMessage);
+                }
 
                 for ( CMMPExchangeLdapUser _eachUser : _exUsers ) {
-                    if ( _onlyExistsInExSMTPList.contains( StringUtils.trimToEmpty( _eachUser.getMail()))) {
+
+                    String _userSmtp = StringUtils.trimToEmpty(_eachUser.getMail()).toLowerCase();
+
+                    if ( _onlyExistsInExSMTPList.contains( _userSmtp ) ) {
+
+                        _logMessage = String.format("Going to create mail contact %s under %s", _userSmtp, _cmmpDIUserOU);
+                        logger.log(Level.DEBUG, _logMessage);
+
                         ningtonLdapUserService.createOrUpdateCMMPDIUser(_eachUser);
                     }
                 }
 
                 // Find modified
+                /*
                 List<String> _bothExistSMTPList = this.findDiffInUserLists(_exUsers, _ningtonUsers, ACTION_BOTH_EXISTS);
 
                 for ( CMMPExchangeLdapUser _eachUser : _exUsers ) {
@@ -101,16 +123,18 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
                 }
 
                 // Find delete
-                List<String> _onlyExistsInNLSMTPList = this.findDiffInUserLists(_exUsers, _ningtonUsers, ACTION_NOT_EXISTS_IN_EX_ONLY);
+                List<String> _onlyExistsInNLSMTPList = this.findDiffInUserLists(_exUsers, _ningtonUsers, ACTION_EXISTS_IN_NL_ONLY);
 
                 for ( CMMPDILdapUser _eachUser : _ningtonUsers ) {
                     if ( _onlyExistsInNLSMTPList.contains( StringUtils.trimToEmpty( _eachUser.getEmail()))) {
                         ningtonLdapUserService.deleteCMMPDIUserByDN(_eachUser);
                     }
                 }
+                */
             }
 
-            for (String _ou : propertiesCmmpSync.getBasesOU() ) {
+            /*
+            for (String _ou : propertiesCmmpSync.getBases() ) {
 
                 List<CMMPExchangeLdapGroup> _exGroups = exchangeLdapQueryService.getAllGroupUnderOU(_ou);
 
@@ -118,6 +142,7 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
                     cmmpdiLdapGroupService.createOrUpdateCMMPDIGroup(_exGroup);
                 }
             }
+            */
         }
     }
 
@@ -145,7 +170,7 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
             }
         }
 
-        if ( pAction == ACTION_NOT_EXISTS_IN_EX_ONLY ) {
+        if ( pAction == ACTION_EXISTS_IN_EX_ONLY ) {
 
             // 2. Find values only in ex-list but not in nt-list
             Set<String> diffSet = new LinkedHashSet<>(_exList);
@@ -154,7 +179,7 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
             // Convert back to List if required by subsequent method signatures
             _result = new ArrayList<>(diffSet);
         }
-        else if ( pAction == ACTION_NOT_EXISTS_IN_NL_ONLY ) {
+        else if ( pAction == ACTION_EXISTS_IN_NL_ONLY ) {
 
             // 2. Find values only in ex-list but not in nt-list
             Set<String> diffSet = new LinkedHashSet<>(_ntist);
@@ -180,29 +205,14 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
      * Translate the source OU path from CMMP format into CMMP-DI format
      *
      * @param source
-     * @param cmmpBaseOu
-     * @param cmmpdiBaseOu
      * @return
      */
-    private String convertDnFromCMMP2CMMPDI(String source, String cmmpBaseOu, String cmmpdiBaseOu) {
-        if (source == null || cmmpBaseOu == null || cmmpdiBaseOu == null) {
-            throw new IllegalArgumentException("DN inputs must not be null");
-        }
+    private String convertDnFromCMMP2CMMPDI(String source) {
 
-        String result = source.trim();
-        String oldBase = cmmpBaseOu.trim();
-        String newBase = cmmpdiBaseOu.trim();
+        String _buffer = source.replaceAll("OU=CMMPBDOs", "OU=BDO,OU=CMMPDI-BDOs")
+                            .replaceAll("OU=Users", "OU=User");
 
-        // 1. Replace the trailing base DN (case-insensitive)
-        String baseRegex = "(?i)(^|,)" + Pattern.quote(oldBase) + "$";
-        result = result.replaceFirst(baseRegex, "$1" + newBase);
-
-        // 2. Transform the specific OU segments above the base DN
-        result = result
-                .replaceFirst("(?i)(^|,)OU=Users,", "$1OU=User,")
-                .replaceFirst("(?i)(^|,)OU=CMMPBDOs,", "$1OU=CMMPDI-BDOs,");
-
-        return result;
+        return _buffer;
     }
 
 }

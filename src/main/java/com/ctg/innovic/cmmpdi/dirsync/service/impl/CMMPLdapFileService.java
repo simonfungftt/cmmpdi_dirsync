@@ -110,7 +110,7 @@ public class CMMPLdapFileService implements CMMPLdapService {
 
         for ( CMMPExchangeLdapUser _user : _buffer ) {
 
-            if ( _user.getDn().toLowerCase().contains( pOU.toLowerCase() ) && _user.getWhenChanged().isBefore(pLastSyncTime) ) {
+            if ( _user.getDn().toLowerCase().contains( pOU.toLowerCase() ) && _user.getWhenChangedInstant().isBefore(pLastSyncTime) ) {
                 _filtered.add(_user);
             }
         }

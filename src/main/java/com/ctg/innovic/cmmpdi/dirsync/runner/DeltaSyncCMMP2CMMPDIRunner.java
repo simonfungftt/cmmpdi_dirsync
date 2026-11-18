@@ -49,7 +49,7 @@ public class DeltaSyncCMMP2CMMPDIRunner implements ApplicationRunner {
 
             logger.log(Level.INFO, String.format("Last delta sync time up to %s", dataSyncManager.getLogFormat(_lastDataSyncTime)));
 
-            for (String _ou : propertiesCmmpSync.getBasesOU() ) {
+            for (String _ou : propertiesCmmpSync.getBases() ) {
 
                 String _userOU = "OU=Users," + _ou;
 
@@ -62,7 +62,7 @@ public class DeltaSyncCMMP2CMMPDIRunner implements ApplicationRunner {
 //                }
             }
 
-            for (String _ou : propertiesCmmpSync.getBasesOU() ) {
+            for (String _ou : propertiesCmmpSync.getBases() ) {
 
 //                List<CMMPExchangeLdapGroup> _exGroups = cmmpLdapQueryService.getLastModifiedGroupUnderOU(_ou, _lastDataSyncTime);
 //

@@ -153,7 +153,7 @@ public class CMMPLdifReaderService {
 
         String _dn = entry.getDN();
         _dn.replaceAll(Constants.CMMP_OU_TO_REPLACE_WITH, Constants.BASE_OU_WO_STARTING_COMMAND);
-        user.setDn(_dn);
+        user.setDnString(_dn);
 
         user.setCn(entry.getAttributeValue("cn"));
         user.setSn(entry.getAttributeValue("sn"));
@@ -164,7 +164,8 @@ public class CMMPLdifReaderService {
         user.setCountryCode(Integer.valueOf(entry.getAttributeValue("countryCode")));
 
         if ( entry.hasAttribute(Constants.LDAP_FIELD_WHENCHANGED) ) {
-            user.setWhenChanged(LDAP_FORMATTER.parse(entry.getAttributeValue(Constants.LDAP_FIELD_WHENCHANGED), Instant::from));
+            //user.setWhenChanged(LDAP_FORMATTER.parse(entry.getAttributeValue(Constants.LDAP_FIELD_WHENCHANGED), Instant::from));
+            user.setWhenChanged(entry.getAttributeValue(Constants.LDAP_FIELD_WHENCHANGED));
         }
 
         // Binary and Certificate fields loaded directly into byte arrays

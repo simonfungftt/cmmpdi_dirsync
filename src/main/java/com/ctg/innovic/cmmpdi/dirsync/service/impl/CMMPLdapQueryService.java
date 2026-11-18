@@ -1,11 +1,14 @@
 package com.ctg.innovic.cmmpdi.dirsync.service.impl;
 
+import com.ctg.innovic.cmmpdi.dirsync.config.ApplicationConfig;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.service.CMMPLdapService;
 import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
 import com.ctg.innovic.cmmpdi.dirsync.utils.DataSyncManager;
+import com.ctg.innovic.cmmpdi.dirsync.utils.LdapTimeUtils;
 import com.ctg.innovic.cmmpdi.dirsync.utils.LogUtils;
+import com.google.gson.Gson;
 import com.unboundid.util.NotNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.Level;
@@ -14,12 +17,11 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
-import org.springframework.ldap.support.LdapUtils;
 import org.springframework.stereotype.Service;
 
-import javax.naming.directory.DirContext;
 import java.time.Instant;
 import java.util.List;
 
@@ -27,6 +29,9 @@ import java.util.List;
 public class CMMPLdapQueryService implements CMMPLdapService {
 
     private final static Logger logger = LogManager.getLogger(CMMPLdapQueryService.class);
+
+    @Autowired
+    private ApplicationConfig applicationConfig;
 
     @Autowired
     @Qualifier("cmmpLdapTemplate")
@@ -103,8 +108,12 @@ public class CMMPLdapQueryService implements CMMPLdapService {
         String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
         logger.log(Level.TRACE, _logMessage);
 
+        LdapContextSource activeCtx = (LdapContextSource) ldapTemplate.getContextSource();
+        logger.log(Level.DEBUG, "ACTIVE QUERY CONTEXT -> URL=" + activeCtx.getUrls()[0]
+                + " | UserDn=" + activeCtx.getUserDn());
+
         // Define your target timestamp
-        String formattedTime = dataSyncManager.getLogFormat(pLastSyncTime);
+        String formattedTime = LdapTimeUtils.toAdGeneralizedTime(pLastSyncTime);
 
         _logMessage = String.format("Trying to fetch CMMP users under OU %s and modified time after %s", pOU, formattedTime);
         logger.log(Level.INFO, _logMessage);
@@ -119,6 +128,18 @@ public class CMMPLdapQueryService implements CMMPLdapService {
         List<CMMPExchangeLdapUser> _result = ldapTemplate.find(
             _query, CMMPExchangeLdapUser.class
         );
+
+        if ( logger.isDebugEnabled() ) {
+
+            Gson gson = new Gson();
+
+            int i = 0;
+
+            for ( CMMPExchangeLdapUser _user : _result ) {
+                _logMessage = String.format("%6d %s", i, gson.toJson(_user));
+                logger.log(Level.DEBUG, _logMessage);
+            }
+        }
 
         _logMessage = String.format("%05d users have been fetched from CMMP", _result.size());
         logger.log(Level.INFO, _logMessage);

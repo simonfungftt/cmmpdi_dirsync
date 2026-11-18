@@ -5,7 +5,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+	org.springframework.boot.ldap.autoconfigure.LdapAutoConfiguration.class
+})
 @ComponentScan({"com.ctg.innovic.cmmpdi.dirsync"})
 public class DirsyncApplication {
 

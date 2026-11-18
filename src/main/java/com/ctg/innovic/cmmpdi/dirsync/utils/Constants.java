@@ -9,8 +9,6 @@ public class Constants {
     public static final String ARGS_FULL = "full";
     public static final String ARGS_WGD = "wgd";
 
-//    public static final String EXEC_DRYRUN =
-
     public static final String LOGGING_ENTERING = "Entering ";
     public static final String LOGGER_LDAPQUERY_DEBUG = "LDAP Base DN: %s, filter: %s";
 
@@ -63,8 +61,6 @@ public class Constants {
 
     private Constants() {
     }
-
-    // OU=ITB-OGCIO,OU=CMMPBDOs,DC=uat,DC=cmmp,DC=hksarg
 
     public static String mapbd2ou(String bd) {
 

@@ -112,7 +112,8 @@ public class CMMPDILdapQueryService {
 
     public CMMPDILdapUser findOneCMMPDIUserByEmail(@NotNull String email) {
 
-        logger.trace("Entering " + LogUtils.getCurrentMethodName() + " with search condition mail: '" + email + "'");
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         List<CMMPDILdapUser> _users = this.findUsersByEmail(email);
 
@@ -147,7 +148,8 @@ public class CMMPDILdapQueryService {
 
     private List<CMMPDILdapUser> findUsersByEmailInternal(String email) {
 
-        logger.debug("Entering " + LogUtils.getCurrentMethodName() + " with search condition mail: '" + email + "'");
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base(Constants.LDAP_BASE_OU_BDO)
@@ -191,7 +193,6 @@ public class CMMPDILdapQueryService {
 
         return null;
     }
-
 
 
     private CMMPDILdapGroup findOneCMMPDIGroupByEmailInternal(String email) {
@@ -238,10 +239,14 @@ public class CMMPDILdapQueryService {
     }
 
 
+
     public boolean deleteCMMPDIObject(String pSmtpAddress) {
 
-        logger.trace("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName()
-                + ", removing object with smtp='" + pSmtpAddress + "' from CMMP-DI directory" );
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
+
+        _logMessage = "Removing object with smtp='" + pSmtpAddress + "' from CMMP-DI directory";
+        logger.log(Level.INFO, _logMessage);
 
         try {
 
@@ -254,7 +259,7 @@ public class CMMPDILdapQueryService {
                         "' from CMMP-DI directory" );
 
                 this.ldapTemplate.unbind(_user.getRealDn());
-//                this.CMMPDILdapCacheService.removeUserCache(_user);
+                //this.CMMPDILdapCacheService.removeUserCache(_user);
                 return true;
             }
 
