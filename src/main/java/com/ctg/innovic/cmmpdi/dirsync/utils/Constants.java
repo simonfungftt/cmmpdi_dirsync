@@ -12,7 +12,11 @@ public class Constants {
     public static final String LOGGING_ENTERING = "Entering ";
     public static final String LOGGER_LDAPQUERY_DEBUG = "LDAP Base DN: %s, filter: %s";
 
+
+
+    public static final String CMMP_BASEOU = "OU=CMMPBDOs";
     public static final String CMMP_OU_TO_REPLACE_WITH = "OU=CMMPBDOs,DC=uat,DC=cmmp,DC=hksarg";
+
 
     public static final String BASE_OU_WO_STARTING_COMMAND = "OU=BDO,OU=CMMPDI-BDOs";
 

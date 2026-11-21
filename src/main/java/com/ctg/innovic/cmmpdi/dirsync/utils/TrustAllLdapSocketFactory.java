@@ -1,13 +1,6 @@
 package com.ctg.innovic.cmmpdi.dirsync.utils;
 
-import javax.net.ssl.*;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
-
-public class TrustAllLdapSocketFactory extends SSLSocketFactory {
+public class TrustAllLdapSocketFactory { /*extends SSLSocketFactory {
     private final SSLSocketFactory delegate;
 
     public TrustAllLdapSocketFactory() {
@@ -35,5 +28,5 @@ public class TrustAllLdapSocketFactory extends SSLSocketFactory {
     @Override public Socket createSocket(InetAddress host, int port) throws IOException { return delegate.createSocket(host, port); }
     @Override public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort) throws IOException { return delegate.createSocket(address, port, localAddress, localPort); }
     @Override public String[] getDefaultCipherSuites() { return delegate.getDefaultCipherSuites(); }
-    @Override public String[] getSupportedCipherSuites() { return delegate.getSupportedCipherSuites(); }
+    @Override public String[] getSupportedCipherSuites() { return delegate.getSupportedCipherSuites(); }*/
 }

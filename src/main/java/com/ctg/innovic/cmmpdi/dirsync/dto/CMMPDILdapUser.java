@@ -150,7 +150,6 @@ public final class CMMPDILdapUser {
         try {
             return ZonedDateTime.parse(raw, LDAP_GENERALIZED_TIME).toInstant();
         } catch (Exception e) {
-            e.printStackTrace();
             return Instant.now();
         }
     }
@@ -231,7 +230,7 @@ public final class CMMPDILdapUser {
     }
 
     public String getEmail() {
-        return email;
+        return StringUtils.lowerCase(email, Locale.ROOT);
     }
 
     public void setEmail(String email) {

@@ -1,9 +1,6 @@
 package com.ctg.innovic.cmmpdi.dirsync.service.impl;
 
 import com.ctg.innovic.cmmpdi.dirsync.dto.ExchangeADUser;
-import com.google.gson.FormattingStyle;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -61,7 +58,7 @@ public class DataImportService {
             }
         }
         catch (IOException e) {
-            e.printStackTrace();
+
         }
 
         return _users;

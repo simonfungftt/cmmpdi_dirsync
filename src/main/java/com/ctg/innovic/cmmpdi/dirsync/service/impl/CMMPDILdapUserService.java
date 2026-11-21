@@ -87,7 +87,7 @@ public class CMMPDILdapUserService {
 
         List<CMMPDILdapUser> result = ldapTemplate.find(query, CMMPDILdapUser.class);
 
-        logger.info(String.format("%05d users have been fetched from directory", result.size()));
+        logger.info(String.format("%06d users have been fetched from directory", result.size()));
 
         return result;
     }
@@ -163,8 +163,11 @@ public class CMMPDILdapUserService {
         return bindAndCacheUser(context, user.getEmail(), false);
     }
 
-    protected boolean createWGDCMMPDIUser(CMMPDILdapUser user) throws InvalidNameException {
-        String cn = "wgd_" + getLocalPart(user.getEmail());
+    protected boolean createWGDCMMPDIUser(@NotNull CMMPDILdapUser user) throws InvalidNameException {
+
+        String _userEmail = (user.getEmail());
+
+        String cn = "wgd_" + getLocalPart(_userEmail);
         Name dn = LdapNameBuilder.newInstance()
                 .add("OU", "CMMPDI-BDOs")
                 .add("OU", "WGD")
@@ -189,7 +192,7 @@ public class CMMPDILdapUserService {
         context.setAttributeValue(Constants.LDAP_FIELD_TITLE, user.getTitle());
         context.setAttributeValue(Constants.LDAP_FIELD_DISTINGUISHEDNAME, dn.toString());
         context.addAttributeValue(Constants.LDAP_FIELD_PROXY_ADDRESS, user.getProxyAddresses());
-// toBase64Cert
+
         if ( user.getUserCert17() != null ) {
             context.setAttributeValue(Constants.LDAP_FIELD_CERT17, toBase64Cert(user.getUserCert17()));
         }
@@ -312,7 +315,7 @@ public class CMMPDILdapUserService {
         return target;
     }
 
-    private DirContextAdapter buildBaseUserContext(Name dn, String cn, CMMPDILdapUser user) {
+    private DirContextAdapter buildBaseUserContext(Name dn, String cn, @NotNull CMMPDILdapUser user) {
         logger.debug("Generate DN = {}", dn);
 
         DirContextAdapter context = new DirContextAdapter(dn);
@@ -327,7 +330,7 @@ public class CMMPDILdapUserService {
         context.setAttributeValue(Constants.LDAP_FIELD_SN, user.getSurname());
         context.setAttributeValue(Constants.LDAP_FIELD_GIVEN_NAME, user.getFirstName());
         context.setAttributeValue(Constants.LDAP_FIELD_DISPLAY_NAME, user.getDisplayName());
-        context.setAttributeValue(Constants.LDAP_FIELD_MAIL, user.getEmail().toLowerCase());
+        context.setAttributeValue(Constants.LDAP_FIELD_MAIL, user.getEmail());
         context.setAttributeValue(Constants.LDAP_FIELD_EXT1, String.valueOf(user.getExtensionAttribute1()));
         context.setAttributeValue(Constants.LDAP_FIELD_EXT3, String.valueOf(user.getExtensionAttribute3()));
 
@@ -391,13 +394,21 @@ public class CMMPDILdapUserService {
     }
 
     private String getLocalPart(String smtpAddress) {
-        if (StringUtils.trimToNull(smtpAddress) != null) {
-            try {
-                InternetAddress address = new InternetAddress(smtpAddress);
-                return address.getAddress().split("@")[0].toLowerCase();
-            } catch (AddressException ae) {
-                logger.error("Cannot find local part from '{}'", smtpAddress);
+        String trimmed = StringUtils.trimToNull(smtpAddress);
+        if (trimmed == null) {
+            return null;
+        }
+
+        try {
+            InternetAddress address = new InternetAddress(trimmed);
+            String parsed = address.getAddress();
+            int atIndex = parsed != null ? parsed.indexOf('@') : -1;
+            if (atIndex > 0) {
+                return parsed.substring(0, atIndex).toLowerCase(Locale.ROOT);
             }
+            logger.warn("SMTP address '{}' does not contain a valid local part", smtpAddress);
+        } catch (AddressException ae) {
+            logger.error("Cannot find local part from '{}'", smtpAddress, ae);
         }
         return null;
     }

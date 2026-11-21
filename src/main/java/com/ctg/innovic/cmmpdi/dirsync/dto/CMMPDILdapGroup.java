@@ -26,6 +26,9 @@ public final class CMMPDILdapGroup {
     @Attribute(name = "description")
     private String description;
 
+    @Attribute(name = "displayName")
+    private String displayName;
+
     @Attribute(name = "mail")
     private String email;
 
@@ -37,7 +40,7 @@ public final class CMMPDILdapGroup {
     private Set<Name> members = new HashSet<>();
 
     @Attribute(name = "proxyAddresses")
-    private List<String> proxyAddresses = new ArrayList<>();
+    private String proxyAddresses;
 
     public LdapName getRealDn() {
         return dn;
@@ -64,7 +67,7 @@ public final class CMMPDILdapGroup {
         return distinguishedName;
     }
 
-    public List<String> getProxyAddresses() {
+    public String getProxyAddresses() {
         return proxyAddresses;
     }
 
@@ -76,4 +79,25 @@ public final class CMMPDILdapGroup {
     public void removeMember(Name userDn) {
         this.members.remove(userDn);
     }
+
+    public void setDn(LdapName dn) {
+        this.dn = dn;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setProxyAddresses(String proxyAddresses) {
+        this.proxyAddresses = proxyAddresses;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public void setDistinguishedName(String distinguishedName) {
+        this.distinguishedName = distinguishedName;
+    }
+
 }

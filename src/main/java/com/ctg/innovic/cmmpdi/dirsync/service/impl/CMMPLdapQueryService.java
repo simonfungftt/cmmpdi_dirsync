@@ -17,13 +17,11 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ldap.core.LdapTemplate;
-import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.Base64;
 import java.util.List;
 
 @Service
@@ -44,7 +42,8 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
     public CMMPExchangeLdapGroup dipGroupBySMTP(@NotNull String pSMTP) {
 
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         CMMPExchangeLdapGroup _group = null;
 
@@ -66,7 +65,8 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
     public CMMPExchangeLdapUser dipUserBySMTP(@NotNull String pSMTP) {
 
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
 
         CMMPExchangeLdapUser _user = null;
 
@@ -108,10 +108,6 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
         String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
         logger.log(Level.TRACE, _logMessage);
-
-        LdapContextSource activeCtx = (LdapContextSource) ldapTemplate.getContextSource();
-        logger.log(Level.DEBUG, "ACTIVE QUERY CONTEXT -> URL=" + activeCtx.getUrls()[0]
-                + " | UserDn=" + activeCtx.getUserDn());
 
         // Define your target timestamp
         String formattedTime = LdapTimeUtils.toAdGeneralizedTime(pLastSyncTime);
@@ -177,23 +173,36 @@ public class CMMPLdapQueryService implements CMMPLdapService {
         logger.log(Level.TRACE, _logMessage);
 
         // Define your target timestamp
-        String formattedTime = dataSyncManager.getLogFormat(pLastSyncTime);
+        String formattedTime = LdapTimeUtils.toAdGeneralizedTime(pLastSyncTime);
 
-        _logMessage = String.format("Trying to fetch CMMP groups under OU %s and modified time after %s", pOU, formattedTime);
+        _logMessage = String.format("Trying to fetch CMMP users under OU %s and modified time after %s", pOU, formattedTime);
         logger.log(Level.INFO, _logMessage);
 
         LdapQuery _query = LdapQueryBuilder.query()
-                .base(pOU /*"OU=Users,OU=ITB-OGCIO,OU=CMMPBDOs"*/)
-                .where("objectClass").is("group").and("whenChanged").gte(formattedTime);
+                .base(pOU)
+                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("group").and("whenChanged").gte(formattedTime);
 
-        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
+        _logMessage = String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter());
+        logger.log(Level.DEBUG, _logMessage);
 
         List<CMMPExchangeLdapGroup> _result = ldapTemplate.find(
-                _query, CMMPExchangeLdapGroup.class
+            _query, CMMPExchangeLdapGroup.class
         );
 
-        logger.log(Level.INFO, String.format("%05d groups have been fetched from CMMP", _result.size()));
+        if ( logger.isDebugEnabled() ) {
 
+            Gson gson = new Gson();
+
+            int i = 0;
+
+            for ( CMMPExchangeLdapGroup _group : _result ) {
+                _logMessage = String.format("%6d %s", i++, gson.toJson(_group));
+                logger.log(Level.DEBUG, _logMessage);
+            }
+        }
+
+        _logMessage = String.format("%05d groups have been fetched from CMMP", _result.size());
+        logger.log(Level.INFO, _logMessage);
         return _result;
     }
 

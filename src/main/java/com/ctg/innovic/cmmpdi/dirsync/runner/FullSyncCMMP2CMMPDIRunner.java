@@ -1,13 +1,11 @@
 package com.ctg.innovic.cmmpdi.dirsync.runner;
 
 import com.ctg.innovic.cmmpdi.dirsync.config.PropertiesCmmpSync;
+import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapUser;
-import com.ctg.innovic.cmmpdi.dirsync.service.impl.CMMPDILdapCacheService;
-import com.ctg.innovic.cmmpdi.dirsync.service.impl.CMMPDILdapGroupService;
-import com.ctg.innovic.cmmpdi.dirsync.service.impl.CMMPDILdapUserService;
-import com.ctg.innovic.cmmpdi.dirsync.service.impl.CMMPLdapQueryService;
+import com.ctg.innovic.cmmpdi.dirsync.service.impl.*;
 import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
 import com.ctg.innovic.cmmpdi.dirsync.utils.DataSyncManager;
 import org.apache.commons.lang3.StringUtils;
@@ -41,13 +39,16 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
     private PropertiesCmmpSync propertiesCmmpSync;
 
     @Autowired
+    private CMMPCacheService exchangeCacheService;
+
+    @Autowired
     private CMMPLdapQueryService exchangeLdapQueryService;
 
     @Autowired
     private CMMPDILdapUserService ningtonLdapUserService;
 
     @Autowired
-    private CMMPDILdapGroupService cmmpdiLdapGroupService;
+    private CMMPDILdapGroupService ningtonLdapGroupService;
 
     @Autowired
     private CMMPDILdapCacheService cmmpdiLdapCacheService;
@@ -69,8 +70,9 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
             /**
              * This process is to read CMMP LDAP information (by OU), and write into same OU
              */
-
             cmmpdiLdapCacheService.initCMMPDIBDO();
+
+            this.exchangeCacheService.initDN2SMTP();
 
             for (String _ou : propertiesCmmpSync.getBases() ) {
 
@@ -137,16 +139,47 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
                 */
             }
 
-            /*
+
             for (String _ou : propertiesCmmpSync.getBases() ) {
 
-                List<CMMPExchangeLdapGroup> _exGroups = exchangeLdapQueryService.getAllGroupUnderOU(_ou);
+                // As base OU does not contains the User OU, so add it
+                String _groupOU = "OU=Groups," + _ou;
 
-                for ( CMMPExchangeLdapGroup _exGroup : _exGroups ) {
-                    cmmpdiLdapGroupService.createOrUpdateCMMPDIGroup(_exGroup);
+                // Translate the CMMP OU into CMMP-DI as well
+                String _cmmpDIGroupOU = convertDnFromCMMP2CMMPDI(_groupOU);
+
+                _logMessage
+                        = String.format(
+                        "Scanning CMMP OU = %s and baseOU = %s, " +
+                                "prepare to write to CMMPDI OU = %s and baseOU = %s",
+                        _groupOU, cmmpBDOBaseOU, _cmmpDIGroupOU, cmmpdiBDOBaseOU);
+                logger.log(Level.INFO, _logMessage);
+
+                List<CMMPExchangeLdapGroup> _exGroups = exchangeLdapQueryService.getAllGroupUnderOU(_groupOU);
+                List<CMMPDILdapGroup> _ningtonGroups = ningtonLdapGroupService.getAllGroupUnderParamOU(_cmmpDIGroupOU);
+
+                // Find not exists
+                List<String> _onlyExistsInExSMTPList = this.findDiffInGroupLists(_exGroups, _ningtonGroups, ACTION_EXISTS_IN_EX_ONLY);
+
+                if ( logger.isDebugEnabled() ) {
+                    _logMessage = String.format("%4d records found to be exists in Exchange only but not nington", _onlyExistsInExSMTPList.size());
+                    logger.log(Level.DEBUG, _logMessage);
+                }
+
+                for ( CMMPExchangeLdapGroup _eachGroup : _exGroups ) {
+
+                    String _groupSmtp = StringUtils.trimToEmpty(_eachGroup.getMail()).toLowerCase();
+
+                    if ( _onlyExistsInExSMTPList.contains( _groupSmtp ) ) {
+
+                        _logMessage = String.format("Going to create mail contact %s under %s", _groupSmtp, _cmmpDIGroupOU);
+                        logger.log(Level.DEBUG, _logMessage);
+
+                        this.ningtonLdapGroupService.createCMMPDIGroup(_eachGroup);
+                    }
                 }
             }
-            */
+
         }
     }
 
@@ -205,6 +238,61 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
         return _result;
     }
 
+
+    private List<String> findDiffInGroupLists(List<CMMPExchangeLdapGroup> pExGroups, List<CMMPDILdapGroup> pNingtoGroups, int pAction) {
+
+        Set<String> _exList = new LinkedHashSet<>();
+        Set<String> _ntist = new LinkedHashSet();
+
+        List<String> _result = new ArrayList<>();
+
+        for ( CMMPExchangeLdapGroup _exUser : pExGroups ) {
+
+            String _buffer = StringUtils.trimToEmpty(_exUser.getMail()).toLowerCase();
+            if (StringUtils.isNotEmpty(_buffer)) {
+                _exList.add(_buffer);
+            }
+        }
+
+        for ( CMMPDILdapGroup _ntUser : pNingtoGroups ) {
+
+            String _buffer = StringUtils.trimToEmpty(_ntUser.getEmail()).toLowerCase();
+            if (StringUtils.isNotEmpty(_buffer)) {
+                _ntist.add(_buffer);
+            }
+        }
+
+        if ( pAction == ACTION_EXISTS_IN_EX_ONLY ) {
+
+            // 2. Find values only in ex-list but not in nt-list
+            Set<String> diffSet = new LinkedHashSet<>(_exList);
+            diffSet.removeAll(_ntist);
+
+            // Convert back to List if required by subsequent method signatures
+            _result = new ArrayList<>(diffSet);
+        }
+        else if ( pAction == ACTION_EXISTS_IN_NL_ONLY ) {
+
+            // 2. Find values only in ex-list but not in nt-list
+            Set<String> diffSet = new LinkedHashSet<>(_ntist);
+            diffSet.removeAll(_exList);
+
+            // Convert back to List if required by subsequent method signatures
+            _result = new ArrayList<>(diffSet);
+        }
+        else if ( pAction == ACTION_BOTH_EXISTS ) {
+
+            // 2. Find values only in ex-list but not in nt-list
+            Set<String> intersectionSet = new LinkedHashSet<>(_ntist);
+            intersectionSet.retainAll(_exList);
+
+            // Convert back to List if required by subsequent method signatures
+            _result = new ArrayList<>(intersectionSet);
+        }
+
+        return _result;
+    }
+
     /**
      * Translate the source OU path from CMMP format into CMMP-DI format
      *
@@ -214,7 +302,8 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
     private String convertDnFromCMMP2CMMPDI(String source) {
 
         String _buffer = source.replaceAll("OU=CMMPBDOs", "OU=BDO,OU=CMMPDI-BDOs")
-                            .replaceAll("OU=Users", "OU=User");
+                            .replaceAll("OU=Users", "OU=User")
+                            .replaceAll("OU=Groups", "OU=Group");
 
         return _buffer;
     }

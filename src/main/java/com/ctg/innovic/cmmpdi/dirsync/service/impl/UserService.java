@@ -71,9 +71,7 @@ public class UserService {
             LdapTemplate _ldapTemplate = context.getBean(LdapTemplate.class);
             _ldapTemplate.bind(dirContext);
         }
-        catch(Exception e) {
-            e.printStackTrace();
-        }
+        catch(Exception e) {}
 
         return null;
     }

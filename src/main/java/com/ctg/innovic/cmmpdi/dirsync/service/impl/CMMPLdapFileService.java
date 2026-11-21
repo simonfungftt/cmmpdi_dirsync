@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class CMMPLdapFileService implements CMMPLdapService {
+public class CMMPLdapFileService {
 
     private final static Logger logger = LogManager.getLogger(CMMPLdapFileService.class);
 
@@ -67,16 +67,16 @@ public class CMMPLdapFileService implements CMMPLdapService {
         }
     }
 */
-    @Override
+
     public CMMPExchangeLdapGroup dipGroupBySMTP(String pSMTP) {
         return this.cmmpCacheService.getGroupFromCacheBySMTP(pSMTP);
     }
 
-    @Override
+
     public CMMPExchangeLdapUser dipUserBySMTP(String pSMTP) {
         return this.cmmpCacheService.getUserFromCacheBySMTP(pSMTP);
     }
-
+/*
     @Override
     public List<CMMPExchangeLdapGroup> getLastModifiedGroupUnderOU(String pOU, Instant pLastSyncTime) {
 
@@ -93,14 +93,15 @@ public class CMMPLdapFileService implements CMMPLdapService {
         }
 
         return _filtered;
-    }
+    }*/
 
+    /*
     @Override
     public List<CMMPExchangeLdapGroup> getAllGroupUnderOU(String pOU) {
         return this.getLastModifiedGroupUnderOU(pOU, Instant.EPOCH);
-    }
+    }*/
 
-    @Override
+
     public List<CMMPExchangeLdapUser> getLastModifiedUserUnderOU(String pOU, Instant pLastSyncTime) {
 
         List<CMMPExchangeLdapUser> _buffer
@@ -119,7 +120,7 @@ public class CMMPLdapFileService implements CMMPLdapService {
 
     }
 
-    @Override
+
     public List<CMMPExchangeLdapUser> getAllUserUnderOU(String pOU) {
         return this.getLastModifiedUserUnderOU(pOU, Instant.EPOCH);
     }

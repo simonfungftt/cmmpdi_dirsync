@@ -74,7 +74,7 @@ public class CMMPLdifReaderService {
 //        }
 //    }
 
-
+    /*
     private CMMPExchangeContainer parseLdif(String ldifContent) {
         CMMPExchangeContainer container = new CMMPExchangeContainer();
 
@@ -125,7 +125,7 @@ public class CMMPLdifReaderService {
 
         return container;
     }
-
+*/
 
     private CMMPExchangeOrganizationalUnit mapToOu(Entry entry) {
         CMMPExchangeOrganizationalUnit ou = new CMMPExchangeOrganizationalUnit();
@@ -176,7 +176,7 @@ public class CMMPLdifReaderService {
     }
 
 
-
+/*
     private CMMPExchangeLdapGroup mapToGroup(Entry entry) {
 
         if ( entry.getAttributeValue("mail") == null ) {
@@ -238,7 +238,7 @@ public class CMMPLdifReaderService {
 
         return group;
     }
-
+*/
 
 
     private byte[] getBytes(Entry entry, String attributeName) {

@@ -12,13 +12,18 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.query.LdapQuery;
+import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.ldap.support.LdapNameBuilder;
 import org.springframework.stereotype.Service;
 
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
 import javax.naming.InvalidNameException;
 import javax.naming.Name;
 import javax.naming.directory.BasicAttribute;
@@ -26,8 +31,7 @@ import javax.naming.directory.DirContext;
 import javax.naming.directory.ModificationItem;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class CMMPDILdapGroupService {
@@ -38,13 +42,41 @@ public class CMMPDILdapGroupService {
     private CMMPDILdapCacheService cmmpdiLdapCacheService;
 
     @Autowired
+    private CMMPCacheService exchangeCacheService;
+
+    @Autowired
     @Qualifier("cmmpdiLdapTemplate")
     private LdapTemplate ldapTemplate;
 
     @Autowired
     private CMMPDILdapQueryService cmmpdiLdapQueryService;
 
-    public boolean createOrUpdateCMMPDIGroup(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws InvalidNameException {
+    private void logEntering() {
+        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+    }
+
+    public List<CMMPDILdapGroup> getAllGroupUnderParamOU(@NotNull String pOU) {
+        logEntering();
+
+        String _logMessage = String.format("Trying to fetch CMMP-DI directory group under OU %s", pOU);
+        logger.log(Level.INFO, _logMessage);
+
+        LdapQuery query = LdapQueryBuilder.query()
+                .base(pOU)
+                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("group");
+
+        _logMessage = String.format("LDAP Base DN: %s, filter: %s", query.base(), query.filter());
+        logger.log(Level.DEBUG, _logMessage);
+
+        List<CMMPDILdapGroup> result = ldapTemplate.find(query, CMMPDILdapGroup.class);
+
+        logger.info(String.format("%06d group have been fetched from directory", result.size()));
+
+        return result;
+    }
+
+
+    public boolean createOrUpdateCMMPDIGroup(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws InvalidNameException, DirSyncApplicationException {
 
         boolean _result = false;
 
@@ -85,17 +117,64 @@ public class CMMPDILdapGroupService {
     }
 
 
-    private List<String> convertMembershipListFromCMMP(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws DirSyncApplicationException {
+    private List<String> convertMembershipListFromCMMP(@NotNull CMMPExchangeLdapGroup exchangeGroup)
+            throws DirSyncApplicationException {
+        logEntering();
 
-        List<String> _memberSmtpList = new ArrayList<>();
-
-        // Assume this is DN from source system
-        // A transformation is required to convert DN into SMTP address
-        for ( String _eachMember : pCMMPExchangeLdapGroup.getMemberDNs() ) {
-            _memberSmtpList.add(_eachMember);
+        String groupMail = exchangeGroup.getMail() != null ? exchangeGroup.getMail() : exchangeGroup.getCn();
+        List<String> sourceMemberDns = exchangeGroup.getMemberDNs();
+        if (sourceMemberDns == null || sourceMemberDns.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        return _memberSmtpList;
+        if (logger.isEnabled(Level.DEBUG)) {
+            logger.log(Level.DEBUG, String.format(
+                    "Going to translate member list of Exchange group %s, with members size of %5d",
+                    groupMail, sourceMemberDns.size()));
+        }
+
+        // Use LinkedHashSet to prevent duplicate member DNs in LDAP
+        Set<String> translatedMemberDns = new LinkedHashSet<>();
+
+        for (String eachMemberDn : sourceMemberDns) {
+            String memberSmtp = exchangeCacheService.lookupSmtpByCMMPDN(eachMemberDn);
+            if (memberSmtp == null || memberSmtp.isBlank()) {
+                logger.log(Level.WARN, String.format(
+                        "Member DN not found in Exchange cache (skipped): %s", eachMemberDn));
+                continue;
+            }
+
+            String targetDn = resolveCmmpdiMemberDn(memberSmtp);
+            if (targetDn != null) {
+                translatedMemberDns.add(targetDn);
+            } else {
+                logger.log(Level.WARN, String.format(
+                        "SMTP %s (from %s) not found in CMMP-DI user/group cache (skipped)",
+                        memberSmtp, eachMemberDn));
+            }
+        }
+
+        if (logger.isEnabled(Level.DEBUG)) {
+            logger.log(Level.DEBUG, String.format(
+                    "After translation, %s in CMMP has %5d members, translated %5d.",
+                    groupMail, sourceMemberDns.size(), translatedMemberDns.size()));
+        }
+
+        return new ArrayList<>(translatedMemberDns);
+    }
+
+    private String resolveCmmpdiMemberDn(String memberSmtp) {
+        CMMPDILdapUser cmmpdiUser = this.cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(memberSmtp);
+        if (cmmpdiUser != null && cmmpdiUser.getDn() != null) {
+            return cmmpdiUser.getDn();
+        }
+
+        CMMPDILdapGroup cmmpdiGroup = this.cmmpdiLdapCacheService.getCMMPDIGroupDnBySMTP(memberSmtp);
+        if (cmmpdiGroup != null && cmmpdiGroup.getDn() != null) {
+            return cmmpdiGroup.getDn();
+        }
+
+        return null;
     }
 
 
@@ -131,37 +210,44 @@ public class CMMPDILdapGroupService {
         LdapName dn = new LdapName(dnString);
         List<String> ouList = new ArrayList<>();
 
-        // Iterate backward through RDNs (from leaf to root order as written in string)
         for (int i = dn.size() - 1; i >= 0; i--) {
             Rdn rdn = dn.getRdn(i);
             if ("OU".equalsIgnoreCase(rdn.getType())) {
-                ouList.add((String) rdn.getValue());
+                String value = rdn.getValue().toString();
+                ouList.add("Groups".equalsIgnoreCase(value) ? "Group" : value);
             }
         }
-
         return ouList.toArray(new String[0]);
     }
 
+    private String getLocalPart(String smtpAddress) {
+        if (StringUtils.trimToNull(smtpAddress) != null) {
+            try {
+                InternetAddress address = new InternetAddress(smtpAddress);
+                return address.getAddress().split("@")[0].toLowerCase();
+            } catch (AddressException ae) {
+                logger.error("Cannot find local part from '{}'", smtpAddress);
+            }
+        }
+        return null;
+    }
 
 
-    public boolean createCMMPDIGroup(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws InvalidNameException {
-
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
-        logger.log(Level.TRACE, _logMessage);
+    public boolean createCMMPDIGroup(@NotNull CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws InvalidNameException, DirSyncApplicationException {
+        logEntering();
 
         LdapNameBuilder builder = LdapNameBuilder.newInstance(Constants.BASE_OU_WO_STARTING_COMMAND);
 
-        // Assume the LDAP user does not exist
-        String[] _array = extractOus( pCMMPExchangeLdapGroup.getDn() );
+        String[] ous = extractOus(pCMMPExchangeLdapGroup.getDn().toString());
 
-        for ( short i = 0; i < _array.length; i++ ) {
-            builder.add("ou", _array[i]);
+        for (int i = ous.length - 2; i >= 0; i--) {
+            builder.add("ou", ous[i]);
         }
 
-        builder.add("cn", pCMMPExchangeLdapGroup.getDisplayName().toLowerCase());
-        Name dn = builder.build();
+        String cn = getLocalPart(pCMMPExchangeLdapGroup.getMail().toLowerCase());
+        Name dn = builder.add("cn", cn).build();
 
-        _logMessage = "Generate DN = " + dn.toString();
+        String _logMessage = "Generate DN = " + dn.toString();
         logger.log(Level.DEBUG, _logMessage);
 
         // 2. Prepare the context with objectClasses and attributes
@@ -173,17 +259,20 @@ public class CMMPDILdapGroupService {
                 "group"
         });
 
-        context.setAttributeValue("mail", pCMMPExchangeLdapGroup.getMail());
-        context.setAttributeValue("cn", pCMMPExchangeLdapGroup.getCn());
-        context.setAttributeValue("distinguishedName", pCMMPExchangeLdapGroup.getDistinguishedName());
+        context.setAttributeValue(Constants.LDAP_FIELD_MAIL, pCMMPExchangeLdapGroup.getMail().toLowerCase());
+        context.setAttributeValue(Constants.LDAP_FIELD_CN, pCMMPExchangeLdapGroup.getCn());
+        context.setAttributeValue(Constants.LDAP_FIELD_DISTINGUISHEDNAME, pCMMPExchangeLdapGroup.getDistinguishedName());
+        context.setAttributeValue(Constants.LDAP_FIELD_DISPLAY_NAME, pCMMPExchangeLdapGroup.getDisplayName());
+        context.setAttributeValue(Constants.LDAP_FIELD_PROXY_ADDRESS, pCMMPExchangeLdapGroup.getProxyAddresses());
 
-        String[] _memberArray = this.getCMMPDIMemberByDN( pCMMPExchangeLdapGroup.getMemberDNs() );
+        // The expected format is DN of members in CMMP-DI
+        List<String> _memberArray = this.convertMembershipListFromCMMP( pCMMPExchangeLdapGroup );
 
-        for ( int i = 0; i < _memberArray.length; i++ ) {
-            context.addAttributeValue(Constants.LDAP_FIELD_MEMBER, _memberArray[ i ]);
+        for ( int i = 0; i < _memberArray.size(); i++ ) {
+            context.addAttributeValue(Constants.LDAP_FIELD_MEMBER, _memberArray.get(i));
         }
 
-        _logMessage = "context = " + context;
+        _logMessage = "Group context = " + context;
         logger.log(Level.DEBUG, _logMessage);
 
         return true;
@@ -305,14 +394,14 @@ public class CMMPDILdapGroupService {
             );
         }
 
-        if (ListCompare.equalsIgnoreOrder( pCMMPExchangeLdapGroup.getProxyAddresses(), pCMMPDILdapGroup.getProxyAddresses() ) == false ) {
-            _list.add(
-                    new ModificationItem(
-                            DirContext.REPLACE_ATTRIBUTE,
-                            new BasicAttribute("proxyAddresses", pCMMPExchangeLdapGroup.getProxyAddresses())
-                    )
-            );
-        }
+//        if (ListCompare.equalsIgnoreOrder( pCMMPExchangeLdapGroup.getProxyAddresses(), pCMMPDILdapGroup.getProxyAddresses() ) == false ) {
+//            _list.add(
+//                    new ModificationItem(
+//                            DirContext.REPLACE_ATTRIBUTE,
+//                            new BasicAttribute("proxyAddresses", pCMMPExchangeLdapGroup.getProxyAddresses())
+//                    )
+//            );
+//        }
 
         if ( !CollectionUtils.isEmpty(_list) ) {
 
