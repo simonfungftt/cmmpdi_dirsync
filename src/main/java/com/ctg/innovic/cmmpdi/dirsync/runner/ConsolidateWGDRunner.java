@@ -59,13 +59,14 @@ public class ConsolidateWGDRunner implements ApplicationRunner {
             catch (Exception e) {
                 e.printStackTrace();
             }
-
+/*
             try {
                 cmmpdiLdapWGDService.syncWGDGroups();
             }
             catch (Exception e) {
                 e.printStackTrace();
             }
+ */
         }
     }
 

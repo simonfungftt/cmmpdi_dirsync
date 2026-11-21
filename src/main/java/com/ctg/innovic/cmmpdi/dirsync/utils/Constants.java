@@ -35,7 +35,6 @@ public class Constants {
     public static final String LDAP_FIELD_GIVEN_NAME = "givenName";
     public static final String LDAP_FIELD_PROXY_ADDRESS = "proxyAddresses";
     public static final String LDAP_FIELD_DESCRIPTION = "description";
-    public static final String LDAP_FIELD_COUNTRY_CODE = "countryCode";
     public static final String LDAP_FIELD_MEMBER = "member";
     public static final String LDAP_FIELD_EXT1 = "extensionAttribute1";
     public static final String LDAP_FIELD_EXT3 = "extensionAttribute3";
@@ -46,6 +45,22 @@ public class Constants {
     public static final String LDAP_FIELD_CERT18 = "userCert18";
     public static final String LDAP_FIELD_WHENCREATED = "whenCreated";
     public static final String LDAP_FIELD_WHENCHANGED = "whenChanged";
+    public static final String LDAP_FIELD_MOBILEDATACLASSENTITLE = "mobileDataClassEntitle";
+    public static final String LDAP_FIELD_OBJECTGUID = "objectGUID";
+    public static final String LDAP_FIELD_INSTANCETYPE = "instanceType";
+    public static final String LDAP_FIELD_OBJECTSID = "objectSid";
+    public static final String LDAP_FIELD_MAILSERVPLAN = "mailServPlan";
+    public static final String LDAP_FIELD_TELEPHONENUMBER = "telephoneNumber";
+    public static final String LDAP_FIELD_USERACCOUNTCONTROL = "userAccountControl";
+    public static final String LDAP_FIELD_EXTACCTYPE = "extAccType";
+    public static final String LDAP_FIELD_USERPASSWORD = "userPassword";
+    public static final String LDAP_FIELD_ACCOUNTEXPIRES = "accountExpires";
+    public static final String LDAP_FIELD_PHYSICALDELIVERYOFFICENAME = "physicalDeliveryOfficeName";
+    public static final String LDAP_FIELD_HIDEFROMADDRESSLISTS = "hideFromAddressLists";
+    public static final String LDAP_FIELD_COUNTRYCODE = "countryCode";
+    public static final String LDAP_FIELD_HOUSEIDENTIFIER = "houseIdentifier";
+    public static final String LDAP_FIELD_ACCTSTATUS = "acctStatus";
+    public static final String LDAP_FIELD_SAMACCOUNTNAME = "sAMAccountName";
 
 
     public static final int WGD_OPERATION_USER = 1;

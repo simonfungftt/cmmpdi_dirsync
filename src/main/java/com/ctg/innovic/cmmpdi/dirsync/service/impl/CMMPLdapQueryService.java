@@ -23,6 +23,7 @@ import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
 
 @Service
@@ -136,7 +137,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
             int i = 0;
 
             for ( CMMPExchangeLdapUser _user : _result ) {
-                _logMessage = String.format("%6d %s", i, gson.toJson(_user));
+                _logMessage = String.format("%6d %s", i++, gson.toJson(_user));
                 logger.log(Level.DEBUG, _logMessage);
             }
         }

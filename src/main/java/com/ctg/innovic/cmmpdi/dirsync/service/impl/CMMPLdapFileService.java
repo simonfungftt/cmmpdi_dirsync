@@ -45,7 +45,7 @@ public class CMMPLdapFileService implements CMMPLdapService {
 
     @Autowired
     private CMMPCacheService cmmpCacheService;
-
+/*
     public void initCMMPCache() throws IOException {
 
         CMMPExchangeContainer _userContainer = cmmpLdifReaderService.parseLdifFile(pathOfAllUserFilePath);
@@ -66,7 +66,7 @@ public class CMMPLdapFileService implements CMMPLdapService {
             cmmpCacheService.addGroupCache(_group);
         }
     }
-
+*/
     @Override
     public CMMPExchangeLdapGroup dipGroupBySMTP(String pSMTP) {
         return this.cmmpCacheService.getGroupFromCacheBySMTP(pSMTP);

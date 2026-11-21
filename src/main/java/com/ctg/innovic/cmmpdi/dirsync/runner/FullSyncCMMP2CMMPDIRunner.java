@@ -88,13 +88,12 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
                 logger.log(Level.INFO, _logMessage);
 
                 List<CMMPExchangeLdapUser> _exUsers = exchangeLdapQueryService.getAllUserUnderOU(_userOU);
-                List<CMMPDILdapUser> _ningtonUsers = ningtonLdapUserService.getAllUserUnderOU(_cmmpDIUserOU);
+                List<CMMPDILdapUser> _ningtonUsers = ningtonLdapUserService.getAllUserUnderParamOU(_cmmpDIUserOU);
 
                 // Find not exists
                 List<String> _onlyExistsInExSMTPList = this.findDiffInUserLists(_exUsers, _ningtonUsers, ACTION_EXISTS_IN_EX_ONLY);
 
                 if ( logger.isDebugEnabled() ) {
-
                     _logMessage = String.format("%4d records found to be exists in Exchange only but not nington", _onlyExistsInExSMTPList.size());
                     logger.log(Level.DEBUG, _logMessage);
                 }
@@ -113,15 +112,20 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
                 }
 
                 // Find modified
-                /*
+
                 List<String> _bothExistSMTPList = this.findDiffInUserLists(_exUsers, _ningtonUsers, ACTION_BOTH_EXISTS);
+
+                if ( logger.isDebugEnabled() ) {
+                    _logMessage = String.format("%4d records found to be exists in both Exchange and nington", _bothExistSMTPList.size());
+                    logger.log(Level.DEBUG, _logMessage);
+                }
 
                 for ( CMMPExchangeLdapUser _eachUser : _exUsers ) {
                     if ( _bothExistSMTPList.contains( StringUtils.trimToEmpty( _eachUser.getMail()))) {
                         ningtonLdapUserService.createOrUpdateCMMPDIUser(_eachUser);
                     }
                 }
-
+/*
                 // Find delete
                 List<String> _onlyExistsInNLSMTPList = this.findDiffInUserLists(_exUsers, _ningtonUsers, ACTION_EXISTS_IN_NL_ONLY);
 

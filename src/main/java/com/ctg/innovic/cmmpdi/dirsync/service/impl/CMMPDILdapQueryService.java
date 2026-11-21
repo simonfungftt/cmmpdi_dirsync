@@ -22,11 +22,18 @@ import org.springframework.stereotype.Service;
 
 import javax.naming.Name;
 import javax.naming.directory.ModificationItem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class CMMPDILdapQueryService {
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyMMdd");
 
     private static Logger logger = LogManager.getLogger(CMMPDILdapQueryService.class);
 
@@ -35,40 +42,38 @@ public class CMMPDILdapQueryService {
     private LdapTemplate ldapTemplate;
 
     /**
-     * LDAP query all user objects from CMMP-DI
+     * LDAP query all user objects from CMMP-DI under LDAP_BASE_OU_BDO
      * @return
      */
     public List<CMMPDILdapUser> listCMMPDIUsers() {
-
-        logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
-
-        LdapQuery _query =  LdapQueryBuilder.query()
-                .base(Constants.LDAP_BASE_OU_BDO)
-                .where("objectClass").is("inetOrgPerson");
-
-        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
-
-        List<CMMPDILdapUser> _result = ldapTemplate.find(_query, CMMPDILdapUser.class);
-
-        return _result;
+        return listCMMPDIBDOorWGDUsers(Constants.LDAP_BASE_OU_BDO);
     }
 
 
     /**
-     * LDAP query all user objects from CMMP-DI
+     * LDAP query all user objects from CMMP-DI under LDAP_BASE_OU_WGD
      * @return
      */
     public List<CMMPDILdapUser> listCMMPDIWGDUsers() {
+        return listCMMPDIBDOorWGDUsers(Constants.LDAP_BASE_OU_WGD);
+    }
+
+
+    private List<CMMPDILdapUser> listCMMPDIBDOorWGDUsers(@NotNull String searchBase) {
 
         logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
         LdapQuery _query = LdapQueryBuilder.query()
-                            .base(Constants.LDAP_BASE_OU_WGD)
-                            .where("objectClass").is("inetOrgPerson");
+                .base(searchBase)
+                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("inetOrgPerson");
 
-        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
+        String _logMessage = String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter());
+        logger.log(Level.DEBUG, _logMessage);
 
         List<CMMPDILdapUser> _result = ldapTemplate.find(_query, CMMPDILdapUser.class);
+
+        _logMessage = String.format("%6d user object fetched", _result.size());
+        logger.log(Level.DEBUG, _logMessage);
 
         return _result;
     }
@@ -79,32 +84,30 @@ public class CMMPDILdapQueryService {
      * @return
      */
     public List<CMMPDILdapGroup> listCMMPDIGroups() {
-
-        logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
-
-        LdapQuery _query = LdapQueryBuilder.query()
-                            .base(Constants.LDAP_BASE_OU_BDO)
-                            .where("objectClass").is("group");
-
-        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
-
-        List<CMMPDILdapGroup> _result = ldapTemplate.find(_query, CMMPDILdapGroup.class);
-
-        return _result;
+        return listCMMPDIBDOorWGDGroups(Constants.LDAP_BASE_OU_BDO);
     }
 
 
     public List<CMMPDILdapGroup> listCMMPDIWGDGroups() {
+        return listCMMPDIBDOorWGDGroups(Constants.LDAP_BASE_OU_WGD);
+    }
+
+
+    private List<CMMPDILdapGroup> listCMMPDIBDOorWGDGroups(@NotNull String searchBase) {
 
         logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
         LdapQuery _query = LdapQueryBuilder.query()
-                .base(Constants.LDAP_BASE_OU_WGD)
-                .where("objectClass").is("group");
+                .base(searchBase)
+                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("group");
 
-        logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
+        String _logMessage = String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter());
+        logger.log(Level.DEBUG, _logMessage);
 
         List<CMMPDILdapGroup> _result = ldapTemplate.find(_query, CMMPDILdapGroup.class);
+
+        _logMessage = String.format("%6d user object fetched", _result.size());
+        logger.log(Level.DEBUG, _logMessage);
 
         return _result;
     }
@@ -119,7 +122,7 @@ public class CMMPDILdapQueryService {
 
         CMMPDILdapUser _theOneUser = null;
 
-        if ( _users != null && _users.isEmpty() == false ) {
+        if ( !CollectionUtils.isEmpty(_users) ) {
             _theOneUser = _users.get(0);
         }
 
@@ -239,27 +242,124 @@ public class CMMPDILdapQueryService {
     }
 
 
-
-    public boolean deleteCMMPDIObject(String pSmtpAddress) {
+    public boolean deleteCMMPDIBDOObjectByUser(@NotNull CMMPDILdapUser user) {
 
         String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
         logger.log(Level.TRACE, _logMessage);
 
-        _logMessage = "Removing object with smtp='" + pSmtpAddress + "' from CMMP-DI directory";
+        _logMessage = "Trying to removing user object with smtp='" + user.getEmail().toLowerCase() + "' from CMMP-DI directory.";
         logger.log(Level.INFO, _logMessage);
 
         try {
 
+            if ( user != null ) {
+
+                String _datePart = LocalDate.now().format(DATE_FORMATTER);
+                String _eventNum = String.format("%s%08d", _datePart, ThreadLocalRandom.current().nextInt(100_000_000));
+
+                _logMessage =
+                        String.format(
+                                "Going to removing user object with smtp=%s dn=%s from CMMP-DI directory, " +
+                                "this event is marked as %s", user.getEmail().toLowerCase(), user.getDn(), _eventNum);
+                logger.log(Level.INFO, _logMessage);
+
+                // Backup before removing
+                Path filePath = Path.of("backupdata/" + _eventNum + "_user.json");
+                Files.writeString(filePath, new Gson().toJson(user));
+
+                _logMessage = String.format("Data has been backup to %s", filePath.toString() );
+                logger.log(Level.DEBUG, _logMessage);
+
+                this.ldapTemplate.unbind(user.getRealDn());
+                return true;
+            }
+        }
+        catch(Exception e) {
+            logger.error("Exception in removing user object with smtp '" +  user.getEmail().toLowerCase() + "' " + e.getMessage());
+            return false;
+        }
+
+        return false;
+    }
+
+
+
+    public boolean deleteCMMPDIBDOObjectByGroup(@NotNull CMMPDILdapGroup group) {
+
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
+
+        _logMessage = "Trying to removing group object with smtp='" + group.getEmail().toLowerCase() + "' from CMMP-DI directory.";
+        logger.log(Level.INFO, _logMessage);
+
+        try {
+
+            if ( group != null ) {
+
+                String _datePart = LocalDate.now().format(DATE_FORMATTER);
+                String _eventNum = String.format("%s%08d", _datePart, ThreadLocalRandom.current().nextInt(100_000_000));
+
+                _logMessage =
+                        String.format(
+                                "Going to removing group object with smtp=%s dn=%s from CMMP-DI directory, " +
+                                        "this event is marked as %s", group.getEmail().toLowerCase(), group.getDn(), _eventNum);
+                logger.log(Level.INFO, _logMessage);
+
+                // Backup before removing
+                Path filePath = Path.of("backupdata/" + _eventNum + "_group.json");
+                Files.writeString(filePath, new Gson().toJson(group));
+
+                _logMessage = String.format("Data has been backup to %s", filePath.toString() );
+                logger.log(Level.DEBUG, _logMessage);
+
+                this.ldapTemplate.unbind(group.getDn());
+                return true;
+            }
+        }
+        catch(Exception e) {
+            logger.error("Exception in removing group object with smtp '" +  group.getEmail().toLowerCase() + "' " + e.getMessage());
+            return false;
+        }
+
+        return false;
+    }
+
+
+    /**
+     * A central method to remove CMMP-DI objects for user and group
+     *
+     * @param pSmtpAddress
+     * @return
+     */
+    public boolean deleteCMMPDIObjectBySMTPAddress111(String pSmtpAddress) {
+
+        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        logger.log(Level.TRACE, _logMessage);
+
+        _logMessage = "Trying to removing object with smtp='" + pSmtpAddress + "' from CMMP-DI directory.";
+        logger.log(Level.INFO, _logMessage);
+
+        try {
+
+            // TODO: This is read time query LDAP server, why do not get it from cache?
             CMMPDILdapUser _user = this.findOneCMMPDIUserByEmail(pSmtpAddress);
 
             if ( _user != null ) {
 
-                logger.trace("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName()
-                        + ", removing user object with smtp='" + pSmtpAddress +
-                        "' from CMMP-DI directory" );
+                String _datePart = LocalDate.now().format(DATE_FORMATTER);
+                String _eventNum = String.format("%s%08d", _datePart, ThreadLocalRandom.current().nextInt(100_000_000));
+
+                _logMessage = String.format("Going to removing user object with smtp=%s from CMMP-DI directory, this event is marked as %s", pSmtpAddress, _eventNum);
+                logger.log(Level.INFO, _logMessage);
+
+                // Backup before removing
+                Path filePath = Path.of("backupdata/" + _eventNum + ".json");
+                Files.writeString(filePath, new Gson().toJson(_user));
+
+                _logMessage = String.format("Data has been backup to %s", filePath.toString() );
+                logger.log(Level.DEBUG, _logMessage);
 
                 this.ldapTemplate.unbind(_user.getRealDn());
-                //this.CMMPDILdapCacheService.removeUserCache(_user);
                 return true;
             }
 

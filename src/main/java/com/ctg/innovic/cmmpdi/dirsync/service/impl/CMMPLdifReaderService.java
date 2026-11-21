@@ -53,26 +53,26 @@ public class CMMPLdifReaderService {
 
 
 
-    public CMMPExchangeContainer parseLdifFile(String ldifFilePath) throws IOException {
-
-        try {
-
-            Path path = Paths.get(ldifFilePath);
-
-            String content = Files.readString(path, StandardCharsets.UTF_8);
-            content = LdifCleaner.clean(content);
-            content = cleanLdifString(content);
-
-            Path filePath = Path.of(ldifFilePath + ".bak");
-            Files.writeString(filePath, content);
-
-            return this.parseLdif(content);
-        }
-        catch(RuntimeException re) {
-            logger.error("Exception in processing file " + ldifFilePath + ", " + re.getMessage());
-            throw re;
-        }
-    }
+//    public CMMPExchangeContainer parseLdifFile(String ldifFilePath) throws IOException {
+//
+//        try {
+//
+//            Path path = Paths.get(ldifFilePath);
+//
+//            String content = Files.readString(path, StandardCharsets.UTF_8);
+//            content = LdifCleaner.clean(content);
+//            content = cleanLdifString(content);
+//
+//            Path filePath = Path.of(ldifFilePath + ".bak");
+//            Files.writeString(filePath, content);
+//
+//            return this.parseLdif(content);
+//        }
+//        catch(RuntimeException re) {
+//            logger.error("Exception in processing file " + ldifFilePath + ", " + re.getMessage());
+//            throw re;
+//        }
+//    }
 
 
     private CMMPExchangeContainer parseLdif(String ldifContent) {

@@ -75,7 +75,8 @@ public class CMMPDILdapWGDService {
             String _email = StringUtils.trimToEmpty(_user.getEmail());
 
             if ( _email.toLowerCase().startsWith( _lowerCaseSearchKey ) ) {
-                if ( _user.getExtensionAttribute7() == 1 ) {
+                // Only populated to WGD if marked to be so, and not hidden from address book
+                if ( "1".equals(_user.getExtensionAttribute7()) && !_user.isHiddenFromAddressLists()) {
                     _result.add(_user);
                 }
             }
@@ -115,7 +116,7 @@ public class CMMPDILdapWGDService {
         for ( CMMPDILdapUser bdoUser : unionUserList ){
             _logMessage = bdoUser.getEmail() + " found in both BDO and WGD OU, updating from BDO";
             logger.log(Level.INFO, _logMessage);
-            this.cmmpdiLdapUserService.createWGDCMMPDIUser(bdoUser);
+            //this.cmmpdiLdapUserService.createWGDCMMPDIUser(bdoUser);
         }
     }
 

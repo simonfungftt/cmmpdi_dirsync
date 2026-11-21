@@ -35,7 +35,7 @@ public class CMMPDILdapGroupService {
     private static Logger logger = LogManager.getLogger(CMMPDILdapGroupService.class);
 
     @Autowired
-    private CMMPDILdapCacheService CMMPDILdapCacheService;
+    private CMMPDILdapCacheService cmmpdiLdapCacheService;
 
     @Autowired
     @Qualifier("cmmpdiLdapTemplate")
@@ -51,8 +51,8 @@ public class CMMPDILdapGroupService {
         logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
         // Determine create or update case
-        CMMPDILdapUser _user = this.CMMPDILdapCacheService.getCMMPDIUserDnBySMTP(pCMMPExchangeLdapGroup.getMail());
-        CMMPDILdapGroup _group = this.CMMPDILdapCacheService.getCMMPDIGroupDnBySMTP(pCMMPExchangeLdapGroup.getMail());
+        CMMPDILdapUser _user = this.cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(pCMMPExchangeLdapGroup.getMail());
+        CMMPDILdapGroup _group = this.cmmpdiLdapCacheService.getCMMPDIGroupDnBySMTP(pCMMPExchangeLdapGroup.getMail());
 
         if ( _user == null && _group == null ) {
 
@@ -67,7 +67,9 @@ public class CMMPDILdapGroupService {
                     + " due to SMTP address " + pCMMPExchangeLdapGroup.getMail()
                     + " conflict with users...");
 
-            this.cmmpdiLdapQueryService.deleteCMMPDIObject(_group.getEmail());
+            if ( this.cmmpdiLdapQueryService.deleteCMMPDIBDOObjectByGroup(_group) ) {
+                this.cmmpdiLdapCacheService.removeGroupCache(_group);
+            }
 
             logger.info("Creating new contact object as below...");
 
@@ -108,13 +110,13 @@ public class CMMPDILdapGroupService {
 
         for ( String _smtpAddress : _memberSmtpList ) {
 
-            CMMPDILdapUser _user = this.CMMPDILdapCacheService.getCMMPDIUserDnBySMTP(_smtpAddress);
+            CMMPDILdapUser _user = this.cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(_smtpAddress);
 
             if ( _user != null ) {
                 _result.add( _user.getRealDn() );
             }
 
-            CMMPDILdapGroup _group = this.CMMPDILdapCacheService.getCMMPDIGroupDnBySMTP(_smtpAddress);
+            CMMPDILdapGroup _group = this.cmmpdiLdapCacheService.getCMMPDIGroupDnBySMTP(_smtpAddress);
 
             if ( _group != null ) {
                 _result.add( _group.getRealDn() );
@@ -211,7 +213,7 @@ public class CMMPDILdapGroupService {
         logger.log(Level.TRACE, _logMessage);
 
         // Assume the group already exists
-        CMMPDILdapGroup _group = this.CMMPDILdapCacheService.getCMMPDIGroupDnBySMTP(smtpAddress);
+        CMMPDILdapGroup _group = this.cmmpdiLdapCacheService.getCMMPDIGroupDnBySMTP(smtpAddress);
 
         if ( _group != null ) {
 
@@ -257,10 +259,10 @@ public class CMMPDILdapGroupService {
 
         if ( logger.isDebugEnabled() ) {
 
-            this.CMMPDILdapCacheService.initCMMPDIBDO();
+            this.cmmpdiLdapCacheService.initCMMPDIBDO();
 
             // Assume the group already exists
-            CMMPDILdapGroup _groupNewImage = this.CMMPDILdapCacheService.getCMMPDIGroupDnBySMTP(smtpAddress);
+            CMMPDILdapGroup _groupNewImage = this.cmmpdiLdapCacheService.getCMMPDIGroupDnBySMTP(smtpAddress);
 
 
             logger.debug( "After action, there are " + _groupNewImage.getMembers().size() + " members in group.");

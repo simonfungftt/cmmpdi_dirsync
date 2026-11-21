@@ -4,223 +4,171 @@ import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
 import com.ctg.innovic.cmmpdi.dirsync.utils.LogUtils;
-import com.unboundid.util.NotNull;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
+/**
+ * In-memory lookup cache mapping lowercase SMTP email addresses to CMMP-DI BDO and WGD
+ * LDAP user and group DTOs to minimize repetitive LDAP round-trips during directory sync.
+ */
 @Service
 public class CMMPDILdapCacheService {
 
-    private static Logger logger = LogManager.getLogger(CMMPDILdapCacheService.class);
+    private static final Logger logger = LogManager.getLogger(CMMPDILdapCacheService.class);
 
     @Autowired
     private CMMPDILdapQueryService ldapQueryService;
 
-    private Map<String, CMMPDILdapUser> cmmpdiUserSMTP2DnMap;
-    private Map<String, CMMPDILdapGroup> cmmpdiGroupSMTP2DnMap;
+    private final Map<String, CMMPDILdapUser> cmmpdiUserSMTP2DnMap = new ConcurrentHashMap<>();
+    private final Map<String, CMMPDILdapGroup> cmmpdiGroupSMTP2DnMap = new ConcurrentHashMap<>();
 
-    private Map<String, CMMPDILdapUser> cmmpdiWGDUserSMTP2DnMap;
-    private Map<String, CMMPDILdapGroup> cmmpdiWGDGroupSMTP2DnMap;
+    private final Map<String, CMMPDILdapUser> cmmpdiWGDUserSMTP2DnMap = new ConcurrentHashMap<>();
+    private final Map<String, CMMPDILdapGroup> cmmpdiWGDGroupSMTP2DnMap = new ConcurrentHashMap<>();
 
-    private Map<String, String> cmmpUserDn2SMTPMap;
-    private Map<String, String> cmmpGroupDn2SMTPMap;
-
-    public CMMPDILdapCacheService() {
-        this.cmmpdiUserSMTP2DnMap = new HashMap<>();
-        this.cmmpdiGroupSMTP2DnMap = new HashMap<>();
-
-        this.cmmpdiWGDUserSMTP2DnMap = new HashMap<>();
-        this.cmmpdiWGDGroupSMTP2DnMap = new HashMap<>();
-
-        this.cmmpUserDn2SMTPMap = new HashMap<>();
-        this.cmmpGroupDn2SMTPMap = new HashMap<>();
-    }
+    // -------------------------------------------------------------------------
+    // Cache Initialization
+    // -------------------------------------------------------------------------
 
     /**
-     * Initialise CMMP-DI BDO users and group into a map structure (smtp, object)
+     * Reloads all CMMP-DI BDO users and groups from LDAP into the in-memory SMTP lookup maps.
      */
     public void initCMMPDIBDO() {
+        logEntering();
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
-        logger.log(Level.TRACE, _logMessage);
+        logger.debug("Initialising CMMP-DI BDO users...");
+        populateCache(cmmpdiUserSMTP2DnMap, ldapQueryService.listCMMPDIUsers(), CMMPDILdapUser::getEmail);
+        logger.info("{} BDO user entries have been initialised.", cmmpdiUserSMTP2DnMap.size());
 
-        this.cmmpdiUserSMTP2DnMap.clear();
-        this.cmmpdiGroupSMTP2DnMap.clear();
-
-        // List all users from CMMP-DI BDO OUs users
-        _logMessage = "Initialising CMMP-DI BDO users...";
-        logger.log(Level.DEBUG, _logMessage );
-
-        List<CMMPDILdapUser> _users = this.ldapQueryService.listCMMPDIUsers();
-
-        // For each of the users, set up a map, by SMTP address to the user object
-        for ( CMMPDILdapUser _user : _users ) {
-            if ( _user.getEmail() != null ) {
-                cmmpdiUserSMTP2DnMap.put(_user.getEmail().toLowerCase(), _user);
-            }
-        }
-
-        _logMessage = this.cmmpdiUserSMTP2DnMap.size()+ " user entries had been initialised...";
-        logger.log(Level.INFO, _logMessage);
-
-
-        // List all users from CMMP-DI BDO OUs groups
-        _logMessage = "Initialising CMMP-DI BDO groups...";
-        logger.log(Level.DEBUG, _logMessage );
-
-        List<CMMPDILdapGroup> _groups = this.ldapQueryService.listCMMPDIGroups();
-
-        for ( CMMPDILdapGroup _group : _groups ) {
-            if ( _group.getEmail() != null ) {
-                cmmpdiGroupSMTP2DnMap.put(_group.getEmail().toLowerCase(), _group);
-            }
-        }
-        _logMessage = this.cmmpdiGroupSMTP2DnMap.size()+ " group entries had been initialised...";
-        logger.log(Level.INFO, _logMessage);
+        logger.debug("Initialising CMMP-DI BDO groups...");
+        populateCache(cmmpdiGroupSMTP2DnMap, ldapQueryService.listCMMPDIGroups(), CMMPDILdapGroup::getEmail);
+        logger.info("{} BDO group entries have been initialised.", cmmpdiGroupSMTP2DnMap.size());
     }
-
 
     /**
-     * Initialise CMMP-DI WGD users and group into a map structure (smtp, object)
+     * Reloads all CMMP-DI WGD users and groups from LDAP into the in-memory SMTP lookup maps.
      */
     public void initCMMPDIWGD() {
+        logEntering();
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
-        logger.log(Level.TRACE, _logMessage);
+        logger.debug("Initialising CMMP-DI WGD users...");
+        List<CMMPDILdapUser> wgdUsers = ldapQueryService.listCMMPDIWGDUsers();
+        populateCache(cmmpdiWGDUserSMTP2DnMap, wgdUsers, CMMPDILdapUser::getEmail);
 
-        this.cmmpdiWGDUserSMTP2DnMap.clear();
-        this.cmmpdiWGDGroupSMTP2DnMap.clear();
-
-        // List all users from CMMP-DI WGD OUs users
-        _logMessage = "Initialising CMMP-DI WGD users...";
-        logger.log(Level.DEBUG, _logMessage );
-
-        List<CMMPDILdapUser> _users = this.ldapQueryService.listCMMPDIWGDUsers();
-
-        for ( CMMPDILdapUser _user : _users ) {
-            if ( _user.getEmail() != null ) {
-                cmmpdiWGDUserSMTP2DnMap.put(_user.getEmail().toLowerCase(), _user);
-            }
-
-            String _buffer
-                    = String.format("WGD User SMTP address = %s, whenCreated = %s and whenUpdated = %s", _user.getEmail(),
-                    _user.getWhenCreated(),
-                    _user.getWhenChanged()
-            );
-            //logger.log(Level.DEBUG, _buffer);
-        }
-
-        _logMessage = this.cmmpdiWGDUserSMTP2DnMap.size()+ " WGD user entries had been initialised...";
-        logger.log(Level.INFO, _logMessage);
-
-
-        // List all users from CMMP-DI WGD OUs groups
-        _logMessage = "Initialising CMMP-DI WGD groups...";
-        logger.log(Level.DEBUG, _logMessage );
-
-        List<CMMPDILdapGroup> _groups = this.ldapQueryService.listCMMPDIWGDGroups();
-
-        for ( CMMPDILdapGroup _group : _groups ) {
-            if ( _group.getEmail() != null ) {
-                cmmpdiWGDGroupSMTP2DnMap.put(_group.getEmail().toLowerCase(), _group);
+        if (logger.isDebugEnabled() && wgdUsers != null) {
+            for (CMMPDILdapUser user : wgdUsers) {
+                logger.debug("WGD User SMTP = {}, whenCreated = {}, whenChanged = {}",
+                        user.getEmail(), user.getWhenCreated(), user.getWhenChanged());
             }
         }
-        _logMessage = this.cmmpdiWGDGroupSMTP2DnMap.size()+ " WGD group entries had been initialised...";
-        logger.log(Level.INFO, _logMessage);
+        logger.info("{} WGD user entries have been initialised.", cmmpdiWGDUserSMTP2DnMap.size());
+
+        logger.debug("Initialising CMMP-DI WGD groups...");
+        populateCache(cmmpdiWGDGroupSMTP2DnMap, ldapQueryService.listCMMPDIWGDGroups(), CMMPDILdapGroup::getEmail);
+        logger.info("{} WGD group entries have been initialised.", cmmpdiWGDGroupSMTP2DnMap.size());
     }
 
-
-    public void removeGroupCache(CMMPDILdapGroup pCMMPDILdapGroup) {
-
-        if ( pCMMPDILdapGroup != null ) {
-            this.cmmpdiGroupSMTP2DnMap.remove(pCMMPDILdapGroup.getEmail());
-        }
-    }
-
-    public void addGroupCache(String smtp) {
-
-        List<CMMPDILdapGroup> _groups = this.ldapQueryService.findGroupByEmail(smtp);
-
-        if ( _groups != null && _groups.isEmpty() == false) {
-            this.addGroupCache(_groups.get(0));
-        }
-    }
-
-    public void addGroupCache(CMMPDILdapGroup pCMMPDILdapGroup) {
-
-        if ( pCMMPDILdapGroup != null ) {
-            this.cmmpdiGroupSMTP2DnMap.put(pCMMPDILdapGroup.getEmail(), pCMMPDILdapGroup);
-        }
-    }
-
-    public void removeUserCache(CMMPDILdapUser pCMMPDILdapUser) {
-
-        if ( pCMMPDILdapUser != null ) {
-            this.cmmpdiUserSMTP2DnMap.remove(pCMMPDILdapUser.getEmail());
-        }
-    }
+    // -------------------------------------------------------------------------
+    // Cache Mutations
+    // -------------------------------------------------------------------------
 
     public void addUserCache(String smtp) {
-
-        List<CMMPDILdapUser> _users = this.ldapQueryService.findUsersByEmail(smtp);
-
-        if ( _users != null && _users.isEmpty() == false) {
-            this.addUserCache(_users.get(0));
+        String key = normalizeEmail(smtp);
+        if (key == null) {
+            return;
+        }
+        List<CMMPDILdapUser> users = ldapQueryService.findUsersByEmail(key);
+        if (CollectionUtils.isNotEmpty(users)) {
+            addUserCache(users.get(0));
         }
     }
 
-    public void addUserCache(CMMPDILdapUser pCMMPDILdapUser) {
-
-        if ( pCMMPDILdapUser != null ) {
-            this.cmmpdiUserSMTP2DnMap.put(pCMMPDILdapUser.getEmail().toLowerCase(), pCMMPDILdapUser);
+    public void addUserCache(CMMPDILdapUser user) {
+        if (user == null) {
+            return;
+        }
+        String key = normalizeEmail(user.getEmail());
+        if (key != null) {
+            cmmpdiUserSMTP2DnMap.put(key, user);
         }
     }
 
-
-
-    public CMMPDILdapGroup getCMMPDIGroupDnBySMTP(@NotNull String pSmtp) {
-
-        if ( StringUtils.trimToNull(pSmtp) != null ) {
-
-            if ( this.cmmpdiGroupSMTP2DnMap.containsKey(pSmtp.toLowerCase()) ) {
-                return this.cmmpdiGroupSMTP2DnMap.get(pSmtp.toLowerCase());
-            }
+    public void removeUserCache(CMMPDILdapUser user) {
+        if (user == null) {
+            return;
         }
-
-        return null;
+        String key = normalizeEmail(user.getEmail());
+        if (key != null) {
+            cmmpdiUserSMTP2DnMap.remove(key);
+        }
     }
 
-
-    public CMMPDILdapUser getCMMPDIUserDnBySMTP(@NotNull String pSmtp) {
-
-        if ( StringUtils.trimToNull(pSmtp) != null ) {
-
-            if ( this.cmmpdiUserSMTP2DnMap.containsKey(pSmtp.toLowerCase()) ) {
-                return this.cmmpdiUserSMTP2DnMap.get(pSmtp.toLowerCase());
-            }
+    public void removeGroupCache(CMMPDILdapGroup group) {
+        if (group == null) {
+            return;
         }
-
-        return null;
+        String key = normalizeEmail(group.getEmail());
+        if (key != null) {
+            cmmpdiGroupSMTP2DnMap.remove(key);
+        }
     }
 
+    // -------------------------------------------------------------------------
+    // Cache Lookups
+    // -------------------------------------------------------------------------
+
+    public CMMPDILdapUser getCMMPDIUserDnBySMTP(@NotNull String smtp) {
+        String key = normalizeEmail(smtp);
+        return key != null ? cmmpdiUserSMTP2DnMap.get(key) : null;
+    }
+
+    public CMMPDILdapGroup getCMMPDIGroupDnBySMTP(@NotNull String smtp) {
+        String key = normalizeEmail(smtp);
+        return key != null ? cmmpdiGroupSMTP2DnMap.get(key) : null;
+    }
 
     public List<CMMPDILdapUser> getAllBDOUsersFromBDOFromCache() {
-
-        return new ArrayList<>(this.cmmpdiUserSMTP2DnMap.values());
+        return new ArrayList<>(cmmpdiUserSMTP2DnMap.values());
     }
 
     public List<CMMPDILdapUser> getWGDUsersFromWGDFromCache() {
-
-        return new ArrayList<>(this.cmmpdiWGDUserSMTP2DnMap.values());
+        return new ArrayList<>(cmmpdiWGDUserSMTP2DnMap.values());
     }
 
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private <T> void populateCache(Map<String, T> targetMap, List<T> entries, Function<T, String> emailExtractor) {
+        targetMap.clear();
+        if (entries == null) {
+            return;
+        }
+        for (T entry : entries) {
+            String key = normalizeEmail(emailExtractor.apply(entry));
+            if (key != null) {
+                targetMap.put(key, entry);
+            }
+        }
+    }
+
+    private static String normalizeEmail(String email) {
+        String trimmed = StringUtils.trimToNull(email);
+        return trimmed != null ? trimmed.toLowerCase() : null;
+    }
+
+    private void logEntering() {
+        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+    }
 }

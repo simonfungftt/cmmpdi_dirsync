@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-@Service
+
 public class ProcessService {
 
     private static Logger logger = LogManager.getLogger(ProcessService.class);
@@ -79,7 +79,7 @@ public class ProcessService {
      * @throws IOException
      */
     public void initCMMPCache() throws IOException {
-
+/*
         CMMPExchangeContainer _userContainer = cmmpLdifReaderService.parseLdifFile(pathOfAllUserFilePath);
 
         logger.info( _userContainer.getUsers().size() + " users had been initialised from all contacts file.");
@@ -95,6 +95,8 @@ public class ProcessService {
         for ( CMMPExchangeLdapGroup group : _groupContainer.getGroups() ) {
             cmmpCacheService.addCache( group.getDn(), group.getMail() );
         }
+
+ */
     }
 
 
@@ -104,7 +106,7 @@ public class ProcessService {
         this.cmmpdiLdapCacheService.initCMMPDIWGD();
     }
 
-
+/*
     public void processGroupInputData() throws DirSyncApplicationException, IOException, InvalidNameException {
 
         List<File> _files =  fetchInputDataFromFolder(groupInputFileDirectory);
@@ -130,8 +132,8 @@ public class ProcessService {
 //            moveProcessedFileToDest(_file, new File(this.groupProcessedFilePathDirectory + "/" + _file.getName()));
         }
     }
-
-
+*/
+/*
     public void processContactInputData() throws DirSyncApplicationException, IOException, InvalidNameException {
 
         // Fetch files to be processed from input file path
@@ -166,7 +168,7 @@ public class ProcessService {
             moveProcessedFileToDest(_file, new File(this.contactProcessedFilePathDirectory + "/" + _file.getName()));
         }
     }
-
+*/
 
     /**
      * Move processed file to destination
@@ -288,6 +290,7 @@ public class ProcessService {
      * @return
      * @throws DirSyncApplicationException
      */
+    /*
     private CMMPExchangeContainer importFileIntoMemory(@NotNull File pInputFile) throws DirSyncApplicationException {
 
         logger.info("Reading input data files from " + pInputFile.getAbsolutePath());
@@ -320,5 +323,5 @@ public class ProcessService {
 
         return container;
     }
-
+*/
 }

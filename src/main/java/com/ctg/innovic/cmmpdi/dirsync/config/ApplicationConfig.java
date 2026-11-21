@@ -46,10 +46,13 @@ public class ApplicationConfig {
 
     private Map<String, Object> buildBaseEnv() {
         Map<String, Object> env = new HashMap<>();
-        env.put("java.naming.ldap.factory.socket", TrustAllLdapSocketFactory.class.getName());
+//        env.put("java.naming.ldap.factory.socket", TrustAllLdapSocketFactory.class.getName());
         env.put("java.naming.ldap.version", "3");
         env.put("com.sun.jndi.ldap.connect.timeout", "5000");
         env.put("com.sun.jndi.ldap.read.timeout", "10000");
+        env.put("java.naming.ldap.attributes.binary",
+                "gCert userCert userCert17 userCert18  userCertificate userSMIMECertificate");
+
         return env;
     }
 
@@ -77,6 +80,7 @@ public class ApplicationConfig {
         ldapContextSource.setReferral("ignore");
         ldapContextSource.setBaseEnvironmentProperties(buildBaseEnv());
         ldapContextSource.afterPropertiesSet();
+
         return ldapContextSource;
     }
 

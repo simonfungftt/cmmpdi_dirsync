@@ -6,7 +6,6 @@ import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
 import com.ctg.innovic.cmmpdi.dirsync.utils.LdifUtils;
 import com.ctg.innovic.cmmpdi.dirsync.utils.LogUtils;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -15,6 +14,8 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.ldap.NameAlreadyBoundException;
+import org.springframework.ldap.UncategorizedLdapException;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
@@ -36,19 +37,17 @@ import javax.naming.ldap.Rdn;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Service
 public class CMMPDILdapUserService {
 
     private static final Logger logger = LogManager.getLogger(CMMPDILdapUserService.class);
+    private static final DateTimeFormatter LDAP_TIMESTAMP_FORMAT =
+            DateTimeFormatter.ofPattern("yyyyMMddHHmmss.S'Z'").withZone(ZoneOffset.UTC);
 
     @Value("${cmmpdi.bdo.baseOU}")
     private String cmmpdiBDOBaseOU;
@@ -69,295 +68,254 @@ public class CMMPDILdapUserService {
     @Autowired
     private CMMPDILdapQueryService cmmpdiLdapQueryService;
 
+    // -------------------------------------------------------------------------
+    // Public API
+    // -------------------------------------------------------------------------
 
-    private String getLocalPart(String smtpAddress) {
+    public List<CMMPDILdapUser> getAllUserUnderParamOU(@NotNull String pOU) {
+        logEntering();
 
-        if (StringUtils.trimToNull(smtpAddress) != null ) {
-
-            try {
-
-                InternetAddress address = new InternetAddress(smtpAddress);
-                return address.getAddress().split("@")[0].toLowerCase();
-
-            } catch (AddressException ae) {
-                logger.error("Cannot find local part from '" + smtpAddress + "'");
-            }
-        }
-
-        return null;
-    }
-
-
-    private String[] extractOus(String dnString) throws InvalidNameException {
-        LdapName dn = new LdapName(dnString);
-        List<String> ouList = new ArrayList<>();
-
-        // Iterate backward through RDNs (from leaf to root order as written in string)
-        for (int i = dn.size() - 1; i >= 0; i--) {
-            Rdn rdn = dn.getRdn(i);
-            if ("OU".equalsIgnoreCase(rdn.getType())) {
-
-                if ( rdn.getValue().toString().equalsIgnoreCase("Users") ) {
-                    ouList.add("User");
-                }
-                else {
-                    ouList.add((String) rdn.getValue());
-                }
-            }
-        }
-
-        return ouList.toArray(new String[0]);
-    }
-
-
-    private CMMPDILdapUser transformFromCMMPExchangeLdapUser2CMMPDILdapUser(CMMPExchangeLdapUser pCMMPExchangeLdapUser) throws InvalidNameException {
-
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
-        logger.log(Level.TRACE, _logMessage);
-
-        CMMPDILdapUser _cmmpdiLdapUser = this.cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(pCMMPExchangeLdapUser.getMail());
-
-        if ( _cmmpdiLdapUser == null ) {
-            _cmmpdiLdapUser = new CMMPDILdapUser();
-        }
-
-        _cmmpdiLdapUser.setDn( new LdapName(pCMMPExchangeLdapUser.getDn()) );
-        _cmmpdiLdapUser.setDisplayName( pCMMPExchangeLdapUser.getDisplayName() );
-        _cmmpdiLdapUser.setSurname( pCMMPExchangeLdapUser.getSn() );
-        _cmmpdiLdapUser.setFirstName( pCMMPExchangeLdapUser.getGivenName());
-        _cmmpdiLdapUser.setCommonName( pCMMPExchangeLdapUser.getCn() );
-        _cmmpdiLdapUser.setDistinguishedName( pCMMPExchangeLdapUser.getDistinguishedName() );
-        _cmmpdiLdapUser.setEmail( pCMMPExchangeLdapUser.getMail() );
-
-        if ( pCMMPExchangeLdapUser.getProxyAddresses() != null && pCMMPExchangeLdapUser.getProxyAddresses().length > 0 ) {
-
-            String _proxyAddress = String.join(",", pCMMPExchangeLdapUser.getProxyAddresses());
-            _cmmpdiLdapUser.setProxyAddresses( _proxyAddress );
-        }
-
-        if ( pCMMPExchangeLdapUser.getUserCert() != null ) {
-            _cmmpdiLdapUser.setUserCert(new String(pCMMPExchangeLdapUser.getUserCert(), StandardCharsets.UTF_8));
-        }
-
-        if ( pCMMPExchangeLdapUser.getUserCertificate() != null ) {
-            _cmmpdiLdapUser.setgCert(new String(pCMMPExchangeLdapUser.getUserCertificate(), StandardCharsets.UTF_8));
-        }
-
-        _cmmpdiLdapUser.setExtensionAttribute1( pCMMPExchangeLdapUser.getExtensionAttribute1() );
-        _cmmpdiLdapUser.setExtensionAttribute3( pCMMPExchangeLdapUser.getExtensionAttribute3() );
-        _cmmpdiLdapUser.setExtensionAttribute7( pCMMPExchangeLdapUser.getExtensionAttribute7() );
-
-        return _cmmpdiLdapUser;
-    }
-
-
-
-    public List<CMMPDILdapUser> getAllUserUnderOU(@NotNull String pOU) {
-
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
-        logger.log(Level.TRACE, _logMessage);
-
-        LdapContextSource activeCtx = (LdapContextSource) ldapTemplate.getContextSource();
-        logger.log(Level.DEBUG, "ACTIVE QUERY CONTEXT -> URL=" + activeCtx.getUrls()[0]
-                + " | UserDn=" + activeCtx.getUserDn());
-
-        _logMessage = String.format("Trying to fetch nington users under OU %s", pOU);
+        String _logMessage = String.format("Trying to fetch CMMP-DI directory users under OU %s", pOU);
         logger.log(Level.INFO, _logMessage);
 
-        LdapQuery _query = LdapQueryBuilder.query()
+        LdapQuery query = LdapQueryBuilder.query()
                 .base(pOU)
-                .where("objectClass").is("user");
+                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("inetOrgPerson");
 
-        _logMessage = String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter());
+        _logMessage = String.format("LDAP Base DN: %s, filter: %s", query.base(), query.filter());
         logger.log(Level.DEBUG, _logMessage);
 
-        List<CMMPDILdapUser> _result = ldapTemplate.find(_query, CMMPDILdapUser.class);
+        List<CMMPDILdapUser> result = ldapTemplate.find(query, CMMPDILdapUser.class);
 
-        _logMessage = String.format("%05d users have been fetched from nington", _result.size());
-        logger.log(Level.INFO, _logMessage);
+        logger.info(String.format("%05d users have been fetched from directory", result.size()));
 
-        return _result;
+        return result;
     }
 
+    public boolean createOrUpdateCMMPDIUser(@NotNull CMMPExchangeLdapUser exchangeUser) throws InvalidNameException {
+        logEntering();
 
-    /**
-     * Central method to create/update contact objects in CMMP-DI
-     *
-     * @param pCMMPExchangeLdapUser
-     * @return
-     * @throws InvalidNameException
-     */
-    public boolean createOrUpdateCMMPDIUser(@NotNull CMMPExchangeLdapUser pCMMPExchangeLdapUser) throws InvalidNameException {
+        String smtp = StringUtils.trimToEmpty(exchangeUser.getMail()).toLowerCase();
+        CMMPDILdapUser existingUser = this.cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(smtp);
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
-        logger.log(Level.TRACE, _logMessage);
-
-        boolean _result = false;
-
-        // Try to fetch the given email address from memory, see if it is in CMMP-DI already
-        CMMPDILdapUser _user = this.cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(pCMMPExchangeLdapUser.getMail());
-        CMMPDILdapGroup _group = this.cmmpdiLdapCacheService.getCMMPDIGroupDnBySMTP(pCMMPExchangeLdapUser.getMail());
-
-        if ( _user == null && _group == null ) {
-
-            logger.log(Level.INFO,
-                    String.format(
-                            "Going to create object with SMTP address = %s, original DN = %s",
-                            pCMMPExchangeLdapUser.getMail().toLowerCase(), pCMMPExchangeLdapUser.getDn()));
-
-            _result = this.createCMMPDIUser(pCMMPExchangeLdapUser);
-        }
-        else if ( _user == null && _group != null ) {
-
-            logger.log(Level.INFO,
-                    "Going to remove object " + _group.getRealDn()
-                    + " due to SMTP address " + pCMMPExchangeLdapUser.getMail()
-                    + " conflict with users...");
-
-            this.cmmpdiLdapQueryService.deleteCMMPDIObject(_group.getEmail());
-
-            logger.info("Creating new contact object as below...");
-
-            _result = this.createCMMPDIUser(pCMMPExchangeLdapUser);
-        }
-        else {
-            // Update case
-            _result = this.updateCMMPDIUser(pCMMPExchangeLdapUser);
+        if (existingUser != null) {
+            return updateCMMPDIUser(exchangeUser, existingUser);
         }
 
-        return _result;
+        // Remove colliding group if the SMTP address was previously assigned to a group
+        CMMPDILdapGroup existingGroup = cmmpdiLdapCacheService.getCMMPDIGroupDnBySMTP(smtp);
+        if (existingGroup != null) {
+            logger.info("Detected SMTP address {} already used by group {}, removing group object.",
+                    smtp.toLowerCase(), existingGroup.getDn());
+
+            if (cmmpdiLdapQueryService.deleteCMMPDIBDOObjectByGroup(existingGroup)) {
+                cmmpdiLdapCacheService.removeGroupCache(existingGroup);
+            }
+        }
+
+        logger.info("Going to create user object with SMTP address = {}, original DN = {}",
+                smtp.toLowerCase(), exchangeUser.getDn());
+        return createCMMPDIUser(transformToCMMPDIUser(exchangeUser, null));
     }
 
+    public boolean deleteCMMPDIUserByDN(@NotNull CMMPDILdapUser cmmpdiUser) {
+        logEntering();
 
+        Name dn = LdapNameBuilder.newInstance(cmmpdiUser.getDn()).build();
+        logger.info("Going to delete user object with DN '{}' from WGD", dn);
 
-    /**
-     * Method to create CMMP-DI users into BDO OU path based CMMP Exchange user
-     *
-     * @param pCMMPExchangeLdapUser
-     * @return
-     * @throws InvalidNameException
-     */
-    protected boolean createCMMPDIUser(CMMPExchangeLdapUser pCMMPExchangeLdapUser) throws InvalidNameException {
-
-        CMMPDILdapUser pCMMPDILdapUser
-                = this.transformFromCMMPExchangeLdapUser2CMMPDILdapUser(pCMMPExchangeLdapUser);
-
-        return createCMMPDIUser(pCMMPDILdapUser);
+        if (!executionDryrun) {
+            //ldapTemplate.unbind(dn);
+        }
+        return true;
     }
 
+    public boolean deleteCMMPDIUserBySMTP(@NotNull String smtpAddress) {
+        logEntering();
 
-    protected boolean createWGDCMMPDIUser(CMMPDILdapUser pCMMPDILdapUser) throws InvalidNameException {
+        CMMPDILdapUser cmmpdiUser = cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(smtpAddress);
+        return cmmpdiUser == null || deleteCMMPDIUserByDN(cmmpdiUser);
+    }
 
+    // -------------------------------------------------------------------------
+    // Creation & Update Workflows
+    // -------------------------------------------------------------------------
+
+    protected boolean createCMMPDIUser(CMMPExchangeLdapUser exchangeUser) throws InvalidNameException {
+        return createCMMPDIUser(transformToCMMPDIUser(exchangeUser, null));
+    }
+
+    protected boolean createCMMPDIUser(CMMPDILdapUser user) throws InvalidNameException {
+        LdapNameBuilder builder = LdapNameBuilder.newInstance(Constants.BASE_OU_WO_STARTING_COMMAND);
+        String[] ous = extractOus(user.getDn());
+        logger.debug("OU array = {}", Arrays.toString(ous));
+
+        for (int i = ous.length - 2; i >= 0; i--) {
+            builder.add("ou", ous[i]);
+        }
+        String cn = getLocalPart(user.getEmail());
+        Name dn = builder.add("cn", cn).build();
+
+        DirContextAdapter context = buildBaseUserContext(dn, cn, user);
+        context.setAttributeValue(Constants.LDAP_FIELD_DISTINGUISHEDNAME, user.getDistinguishedName());
+        context.setAttributeValue(Constants.LDAP_FIELD_EXT7, String.valueOf(user.getExtensionAttribute7()));
+
+        return bindAndCacheUser(context, user.getEmail(), false);
+    }
+
+    protected boolean createWGDCMMPDIUser(CMMPDILdapUser user) throws InvalidNameException {
+        String cn = "wgd_" + getLocalPart(user.getEmail());
         Name dn = LdapNameBuilder.newInstance()
                 .add("OU", "CMMPDI-BDOs")
                 .add("OU", "WGD")
                 .add("OU", "User")
-                .add("cn", "wgd_" + getLocalPart(pCMMPDILdapUser.getEmail()))
+                .add("cn", cn)
                 .build();
 
-        String _logMessage = "Generate DN = " + dn.toString();
-        logger.log(Level.DEBUG, _logMessage);
+        DirContextAdapter context = buildBaseUserContext(dn, cn, user);
 
-        // 2. Prepare the context with objectClasses and attributes
-        DirContextAdapter context = new DirContextAdapter(dn);
-
-        context.setUpdateMode(false);
-        context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "top");
-        context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "person");
-        context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "organizationalPerson");
-        context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "inetOrgPerson");
-        context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "user");
-
+        // WGD users are created as disabled accounts
+        context.addAttributeValue(Constants.LDAP_FIELD_USERACCOUNTCONTROL, "514");
+        context.addAttributeValue(Constants.LDAP_FIELD_ACCTSTATUS, "D");
 
         context.addAttributeValue(Constants.LDAP_FIELD_OUPATH, "/");
         context.addAttributeValue(Constants.LDAP_FIELD_OUPATH, "/CMMPDI-BDOs");
         context.addAttributeValue(Constants.LDAP_FIELD_OUPATH, "/CMMPDI-BDOs/WGD");
         context.addAttributeValue(Constants.LDAP_FIELD_OUPATH, "/CMMPDI-BDOs/WGD/User");
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss.S'Z'");
-
-        context.setAttributeValue(Constants.LDAP_FIELD_WHENCREATED, sdf.format(new Date(pCMMPDILdapUser.getWhenCreatedInstant().toEpochMilli())));
-        context.setAttributeValue(Constants.LDAP_FIELD_WHENCHANGED, sdf.format(new Date(pCMMPDILdapUser.getWhenChangedInstant().toEpochMilli())));
-
-        //context.setAttributeValue("instanceType", "4");
-        context.setAttributeValue(Constants.LDAP_FIELD_CN, "wgd_" + getLocalPart(pCMMPDILdapUser.getEmail()));
-        context.setAttributeValue(Constants.LDAP_FIELD_SN, pCMMPDILdapUser.getSurname());
-        context.setAttributeValue(Constants.LDAP_FIELD_TITLE, pCMMPDILdapUser.getTitle());
-        context.setAttributeValue(Constants.LDAP_FIELD_DESCRIPTION, pCMMPDILdapUser.getDistinguishedName());
-
-        context.addAttributeValue(Constants.LDAP_FIELD_PROXY_ADDRESS, pCMMPDILdapUser.getProxyAddresses());
-
-        context.setAttributeValue(Constants.LDAP_FIELD_GIVEN_NAME, pCMMPDILdapUser.getFirstName());
-        context.setAttributeValue(Constants.LDAP_FIELD_DISPLAY_NAME, pCMMPDILdapUser.getDisplayName());
-
-        context.setAttributeValue(Constants.LDAP_FIELD_EXT1, String.valueOf(pCMMPDILdapUser.getExtensionAttribute1()));
-
-        context.setAttributeValue(Constants.LDAP_FIELD_CERT17, pCMMPDILdapUser.getUserCert17());
-        context.setAttributeValue(Constants.LDAP_FIELD_CERT18, pCMMPDILdapUser.getUserCert18());
-        context.setAttributeValue(Constants.LDAP_FIELD_GCERT, pCMMPDILdapUser.getgCert());
-        context.setAttributeValue(Constants.LDAP_FIELD_ECERT, pCMMPDILdapUser.getUserCert());
-
+        context.setAttributeValue(Constants.LDAP_FIELD_WHENCREATED, LDAP_TIMESTAMP_FORMAT.format(user.getWhenCreatedInstant()));
+        context.setAttributeValue(Constants.LDAP_FIELD_WHENCHANGED, LDAP_TIMESTAMP_FORMAT.format(user.getWhenChangedInstant()));
+        context.setAttributeValue(Constants.LDAP_FIELD_TELEPHONENUMBER, user.getTelephoneNumber());
+        context.setAttributeValue(Constants.LDAP_FIELD_TITLE, user.getTitle());
         context.setAttributeValue(Constants.LDAP_FIELD_DISTINGUISHEDNAME, dn.toString());
-        context.setAttributeValue(Constants.LDAP_FIELD_MAIL, pCMMPDILdapUser.getEmail());
-
-        String _logContext =  "context = " + context;
-        logger.log(Level.DEBUG, _logContext);
-
-        if ( logger.isDebugEnabled() ) {
-
-            try {
-                Path path = Paths.get("wgd_" + getLocalPart(pCMMPDILdapUser.getEmail()) + ".ldif");
-                Files.writeString(path, LdifUtils.toLdif(context));
-            } catch (NamingException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        context.addAttributeValue(Constants.LDAP_FIELD_PROXY_ADDRESS, user.getProxyAddresses());
+// toBase64Cert
+        if ( user.getUserCert17() != null ) {
+            context.setAttributeValue(Constants.LDAP_FIELD_CERT17, toBase64Cert(user.getUserCert17()));
         }
 
-        try {
-            this.ldapTemplate.bind(context);
-            this.cmmpdiLdapCacheService.addUserCache(pCMMPDILdapUser.getEmail());
-        }
-        catch (org.springframework.ldap.NameAlreadyBoundException
-                | org.springframework.ldap.UncategorizedLdapException e) {
-            if (e.getMessage() != null && e.getMessage().contains("already exists")) {
-                logger.log(Level.WARN, "WGD user {} already exists in target LDAP, skipping creation.", dn);
-                return false;
-            }
-            //throw e;
+        if ( user.getUserCert18() != null ) {
+            context.setAttributeValue(Constants.LDAP_FIELD_CERT18, toBase64Cert(user.getUserCert18()));
         }
 
+        if ( user.getgCert() != null ) {
+            context.setAttributeValue(Constants.LDAP_FIELD_GCERT, toBase64Cert(user.getgCert()));
+        }
+        if ( user.getgCert() != null ) {
+            context.setAttributeValue(Constants.LDAP_FIELD_ECERT, toBase64Cert(user.getUserCert()));
+        }
 
+        dumpLdifIfDebug("debug/" + cn + ".ldif", context);
+        return bindAndCacheUser(context, user.getEmail(), true);
+    }
 
+    protected boolean updateCMMPDIUser(CMMPExchangeLdapUser exchangeUser) {
+        CMMPDILdapUser existingUser = cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(exchangeUser.getMail());
+        return updateCMMPDIUser(exchangeUser, existingUser);
+    }
+
+    private boolean updateCMMPDIUser(CMMPExchangeLdapUser exchangeUser, CMMPDILdapUser cmmpdiUser) {
+        if (cmmpdiUser == null) {
+            return true;
+        }
+        int extAttr3 = parseIntOrDefault(cmmpdiUser.getExtensionAttribute3(), -1);
+        // Only update eligible non-mailbox entries (extensionAttribute3 between 0 and 3)
+        if (extAttr3 >= 0 && extAttr3 <= 3) {
+            updateUserAttributes(exchangeUser, cmmpdiUser);
+        }
         return true;
     }
 
+    private void updateUserAttributes(CMMPExchangeLdapUser exchangeUser, CMMPDILdapUser cmmpdiUser) {
+        logEntering();
 
+        Name dn = LdapNameBuilder.newInstance(cmmpdiUser.getDn()).build();
+        logger.info("Going to update user attributes for smtp='{}', DN='{}'...", cmmpdiUser.getEmail(), dn);
 
-    protected boolean createCMMPDIUser(CMMPDILdapUser pCMMPDILdapUser) throws InvalidNameException {
+        List<ModificationItem> mods = new ArrayList<>();
 
-        // If it is a new object, build the base DN
-        LdapNameBuilder builder = LdapNameBuilder.newInstance(Constants.BASE_OU_WO_STARTING_COMMAND);
+        String srcDisplayName = exchangeUser.getDisplayName();
+        String dstDisplayName = StringUtils.trimToEmpty(cmmpdiUser.getDisplayName());
 
-        // Assume the LDAP user does not exist
-        String[] _array = extractOus( pCMMPDILdapUser.getDn() );
-
-        logger.debug("OU _array = " + Arrays.toString(_array));
-
-        for ( int i = _array.length - 2; i >= 0; i-- ) {
-            builder.add("ou", _array[i]);
+        if (dstDisplayName.isEmpty() && StringUtils.isNotEmpty(srcDisplayName)) {
+            logger.info("Detected display name difference, CMMP='{}', while CMMP-DI one is empty", srcDisplayName);
+            mods.add(new ModificationItem(DirContext.ADD_ATTRIBUTE, new BasicAttribute("displayName", srcDisplayName)));
+        } else if (srcDisplayName != null && !Objects.equals(srcDisplayName, dstDisplayName)) {
+            logger.info("Detected display name difference, CMMP='{}', while CMMP-DI='{}'", srcDisplayName, cmmpdiUser.getDisplayName());
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute("displayName", srcDisplayName)));
         }
 
-        builder.add("cn", getLocalPart(pCMMPDILdapUser.getEmail()));
-        Name dn = builder.build();
+        int exchangeExt1 = parseIntOrDefault(exchangeUser.getExtensionAttribute1(), -1);
+        int cmmpdiExt1 = parseIntOrDefault(cmmpdiUser.getExtensionAttribute1(), -1);
 
-        String _logMessage = "Generate DN = " + dn.toString();
-        logger.log(Level.DEBUG, _logMessage);
+        if (exchangeExt1 != cmmpdiExt1) {
+            logger.info("Detected ExtensionAttribute1 difference, CMMP='{}', while CMMP-DI='{}'",
+                    exchangeUser.getExtensionAttribute1(), cmmpdiUser.getExtensionAttribute1());
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE,
+                    new BasicAttribute("extensionAttribute1", exchangeUser.getExtensionAttribute1())));
+        }
 
-        // 2. Prepare the context with objectClasses and attributes
+        if (mods.isEmpty()) {
+            logger.info("No difference is detected for user object '{}'", exchangeUser.getMail());
+            return;
+        }
+
+        mods.forEach(mod -> logger.info(mod.toString()));
+        if (!executionDryrun) {
+            ldapTemplate.modifyAttributes(dn, mods.toArray(new ModificationItem[0]));
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Shared Helpers
+    // -------------------------------------------------------------------------
+
+    private CMMPDILdapUser transformToCMMPDIUser(CMMPExchangeLdapUser src, CMMPDILdapUser existing) throws InvalidNameException {
+        logEntering();
+
+        CMMPDILdapUser target = (existing != null)
+                ? existing
+                : cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(src.getMail());
+
+        if (target == null) {
+            target = new CMMPDILdapUser();
+        }
+
+        target.setDn(new LdapName(src.getDn()));
+        target.setDisplayName(src.getDisplayName());
+        target.setSurname(src.getSn());
+        target.setFirstName(src.getGivenName());
+        target.setCommonName(src.getCn());
+        target.setDistinguishedName(src.getDistinguishedName());
+        target.setEmail(src.getMail());
+        target.setTelephoneNumber(src.getTelephoneNumber());
+        target.setPhysicalDeliveryOfficeName(src.getPhysicalDeliveryOfficeName());
+        target.setTitle(src.getTitle());
+
+        if (src.getProxyAddresses() != null && src.getProxyAddresses().length > 0) {
+            String _buffer = String.join(",", src.getProxyAddresses());
+            _buffer = _buffer.replaceAll("SMTP:", "");
+            _buffer = _buffer.replaceAll("smtp:", "");
+            target.setProxyAddresses(_buffer);
+        }
+        if (src.getUserCertificate() != null) {
+            target.setUserCert(src.getUserCertificate());
+        }
+        if (src.getUserCertificate() != null) {
+            target.setgCert(src.getUserCertificate());
+        }
+
+        target.setExtensionAttribute1(String.valueOf(src.getExtensionAttribute1()));
+        target.setExtensionAttribute3(String.valueOf(src.getExtensionAttribute3()));
+        target.setExtensionAttribute7(String.valueOf(src.getExtensionAttribute7()));
+
+        return target;
+    }
+
+    private DirContextAdapter buildBaseUserContext(Name dn, String cn, CMMPDILdapUser user) {
+        logger.debug("Generate DN = {}", dn);
+
         DirContextAdapter context = new DirContextAdapter(dn);
-
         context.setUpdateMode(false);
         context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "top");
         context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "person");
@@ -365,148 +323,111 @@ public class CMMPDILdapUserService {
         context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "inetOrgPerson");
         context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "user");
 
-        context.addAttributeValue(Constants.LDAP_FIELD_CN, getLocalPart(pCMMPDILdapUser.getEmail()));
-        context.addAttributeValue("sn", pCMMPDILdapUser.getSurname());
-        context.addAttributeValue(Constants.LDAP_FIELD_GIVEN_NAME, pCMMPDILdapUser.getFirstName());
-        context.addAttributeValue(Constants.LDAP_FIELD_DISPLAY_NAME, pCMMPDILdapUser.getDisplayName());
-        context.addAttributeValue("distinguishedName", pCMMPDILdapUser.getDistinguishedName());
-        context.addAttributeValue(Constants.LDAP_FIELD_MAIL, pCMMPDILdapUser.getEmail().toLowerCase());
-        context.addAttributeValue(Constants.LDAP_FIELD_EXT1, String.valueOf(pCMMPDILdapUser.getExtensionAttribute1()));
-        context.addAttributeValue(Constants.LDAP_FIELD_EXT3, String.valueOf(pCMMPDILdapUser.getExtensionAttribute3()));
-        context.addAttributeValue(Constants.LDAP_FIELD_EXT7, String.valueOf(pCMMPDILdapUser.getExtensionAttribute7()));
+        context.setAttributeValue(Constants.LDAP_FIELD_CN, cn);
+        context.setAttributeValue(Constants.LDAP_FIELD_SN, user.getSurname());
+        context.setAttributeValue(Constants.LDAP_FIELD_GIVEN_NAME, user.getFirstName());
+        context.setAttributeValue(Constants.LDAP_FIELD_DISPLAY_NAME, user.getDisplayName());
+        context.setAttributeValue(Constants.LDAP_FIELD_MAIL, user.getEmail().toLowerCase());
+        context.setAttributeValue(Constants.LDAP_FIELD_EXT1, String.valueOf(user.getExtensionAttribute1()));
+        context.setAttributeValue(Constants.LDAP_FIELD_EXT3, String.valueOf(user.getExtensionAttribute3()));
 
-//        context.addAttributeValue(Constants.LDAP_FIELD_ECERT, pCMMPDILdapUser.getE);
+        context.setAttributeValue(Constants.LDAP_FIELD_PROXY_ADDRESS, user.getProxyAddresses());
 
-        logger.log(Level.DEBUG, "The LDAP user object to be created context is " + context);
+        context.setAttributeValue(Constants.LDAP_FIELD_HIDEFROMADDRESSLISTS, user.getHideFromAddressLists() );
+
+        context.setAttributeValue(Constants.LDAP_FIELD_USERACCOUNTCONTROL, "514");
+
+        if ( user.getgCert() != null ) {
+            context.setAttributeValue(Constants.LDAP_FIELD_GCERT, toBase64Cert(user.getgCert()));
+        }
+
+        if ( user.getUserCert() != null ) {
+            context.setAttributeValue(Constants.LDAP_FIELD_ECERT, toBase64Cert(user.getUserCert()));
+        }
+
+        return context;
+    }
+
+
+    public static String toBase64Cert(byte[] derBytes) {
+        if (derBytes == null || derBytes.length == 0) {
+            return null;
+        }
+        return Base64.getEncoder().encodeToString(derBytes);
+    }
+
+    private boolean bindAndCacheUser(DirContextAdapter context, String email, boolean skipIfExists) {
+        logger.debug("Binding LDAP user context: {}", context);
+        if (executionDryrun) {
+            return true;
+        }
 
         try {
-            this.ldapTemplate.bind(context);
-        }
-        catch (Exception e) {
-            logger.log(Level.ERROR, e.getMessage());
-        }
-
-        this.cmmpdiLdapCacheService.addUserCache(pCMMPDILdapUser.getEmail());
-
-        return true;
-    }
-
-
-    protected boolean updateCMMPDIUser(CMMPExchangeLdapUser pCMMPExchangeLdapUser) {
-
-        CMMPDILdapUser pCMMPDILdapUser = this.cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(pCMMPExchangeLdapUser.getMail());
-
-        // If the user is not a CMMP-DI mailbox
-        if ( pCMMPDILdapUser != null && pCMMPDILdapUser.getExtensionAttribute3() <= 3) {
-            this.updateUserAttributes(pCMMPExchangeLdapUser, pCMMPDILdapUser);
-        }
-
-        return true;
-    }
-
-
-    public boolean deleteCMMPDIUserByDN(@NotNull CMMPDILdapUser pCMMPDILdapUser) {
-
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
-        logger.log(Level.TRACE, _logMessage);
-
-        Name dn = LdapNameBuilder.newInstance(pCMMPDILdapUser.getDn()).build();
-
-        _logMessage =  String.format("Going to delete user object with DN '%s' from WGD", dn);
-        logger.log(Level.INFO, _logMessage);
-
-        if ( this.executionDryrun == false ) {
-            this.ldapTemplate.unbind(dn);
-        }
-
-        return true;
-    }
-
-
-    public boolean deleteCMMPDIUserBySMTP(@NotNull String pSMTPAddress) {
-
-        logger.log(Level.TRACE, String.format(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() ) );
-
-        CMMPDILdapUser _cmmpdiLdapUser = this.cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(pSMTPAddress);
-
-        if ( _cmmpdiLdapUser != null ) {
-            return this.deleteCMMPDIUserByDN(_cmmpdiLdapUser);
-        }
-
-        return true;
-    }
-
-
-
-    private boolean updateUserAttributes(CMMPExchangeLdapUser pCMMPExchangeLdapUser, CMMPDILdapUser pCMMPDILdapUser) {
-
-        logger.debug(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
-
-        Name dn = LdapNameBuilder.newInstance(pCMMPDILdapUser.getDn()).build();
-
-        logger.info("Going to update user attributes for smtp='{}', DN='{}'...", pCMMPDILdapUser.getEmail(), dn);
-
-        logger.info("pCMMPExchangeLdapUser.getDisplayName() = '" + pCMMPExchangeLdapUser.getDisplayName() + "'");
-        logger.info("pCMMPDILdapUser.getDisplayName() = '" + pCMMPDILdapUser.getDisplayName() + "'");
-
-        List<ModificationItem> _list = new ArrayList<>();
-
-        // Compare each of the field, and log delta changes
-        if ( StringUtils.trimToEmpty(pCMMPDILdapUser.getDisplayName()).equals(StringUtils.EMPTY) ) {
-            logger.info("Detected display name difference, CMMP='"
-                    +  pCMMPExchangeLdapUser.getDisplayName() +"', while CMMP-DI one is empty");
-
-            _list.add(
-                    new ModificationItem(
-                            DirContext.ADD_ATTRIBUTE,
-                            new BasicAttribute("displayName", pCMMPExchangeLdapUser.getDisplayName())
-                    )
-            );
-        }
-        else if ( pCMMPExchangeLdapUser.getDisplayName() != null && pCMMPExchangeLdapUser.getDisplayName().compareTo(StringUtils.trimToEmpty(pCMMPDILdapUser.getDisplayName())) != 0 ) {
-            logger.info("Detected display name difference, CMMP='"
-                    +  pCMMPExchangeLdapUser.getDisplayName() +"', while CMMP-DI='" + pCMMPDILdapUser.getDisplayName() + "'");
-
-            _list.add(
-                    new ModificationItem(
-                            DirContext.REPLACE_ATTRIBUTE,
-                            new BasicAttribute("displayName", pCMMPExchangeLdapUser.getDisplayName())
-                    )
-            );
-        }
-
-        if ( pCMMPExchangeLdapUser.getExtensionAttribute1() != pCMMPDILdapUser.getExtensionAttribute1() ) {
-            logger.info("Detected ExtensionAttribute1 difference, CMMP='"
-                    +  pCMMPExchangeLdapUser.getExtensionAttribute1()
-                    + "', while CMMP-DI='" + pCMMPDILdapUser.getExtensionAttribute1() + "'");
-
-            _list.add(
-                    new ModificationItem(
-                            DirContext.REPLACE_ATTRIBUTE,
-                            new BasicAttribute("extensionAttribute1", pCMMPExchangeLdapUser.getExtensionAttribute1())
-                    )
-            );
-        }
-
-        // If there is any modification required
-        if ( !CollectionUtils.isEmpty(_list) ) {
-
-            ModificationItem[] _mods = new ModificationItem[ _list.size() ];
-
-            for ( int i = 0; i < _list.size(); i++ ) {
-                _mods[i] = _list.get(i);
-                logger.info(_mods[i].toString());
+            ldapTemplate.bind(context);
+            cmmpdiLdapCacheService.addUserCache(email);
+            return true;
+        } catch (NameAlreadyBoundException | UncategorizedLdapException e) {
+            if (skipIfExists && e.getMessage() != null && e.getMessage().contains("already exists")) {
+                logger.warn("User {} already exists in target LDAP, skipping creation.", context.getDn());
+                return false;
             }
-
-            // Execute modification
-            ldapTemplate.modifyAttributes(dn, _mods);
+            logger.error("Failed to bind user {}: {}", context.getDn(), e.getMessage(), e);
+            return !skipIfExists;
+        } catch (Exception e) {
+            logger.error("Failed to bind user {}: {}", context.getDn(), e.getMessage(), e);
+            return false;
         }
-        else {
-            logger.info(String.format("No difference is detected for user object '%s'", pCMMPExchangeLdapUser.getMail()));
-        }
-
-        return true;
     }
 
+    private void dumpLdifIfDebug(String filePath, DirContextAdapter context) {
+        if (!logger.isDebugEnabled()) {
+            return;
+        }
+        try {
+            Files.writeString(Paths.get(filePath), LdifUtils.toLdif(context));
+        } catch (NamingException | IOException e) {
+            logger.warn("Failed to write debug LDIF to {}: {}", filePath, e.getMessage());
+        }
+    }
 
+    private String getLocalPart(String smtpAddress) {
+        if (StringUtils.trimToNull(smtpAddress) != null) {
+            try {
+                InternetAddress address = new InternetAddress(smtpAddress);
+                return address.getAddress().split("@")[0].toLowerCase();
+            } catch (AddressException ae) {
+                logger.error("Cannot find local part from '{}'", smtpAddress);
+            }
+        }
+        return null;
+    }
+
+    private String[] extractOus(String dnString) throws InvalidNameException {
+        LdapName dn = new LdapName(dnString);
+        List<String> ouList = new ArrayList<>();
+
+        for (int i = dn.size() - 1; i >= 0; i--) {
+            Rdn rdn = dn.getRdn(i);
+            if ("OU".equalsIgnoreCase(rdn.getType())) {
+                String value = rdn.getValue().toString();
+                ouList.add("Users".equalsIgnoreCase(value) ? "User" : value);
+            }
+        }
+        return ouList.toArray(new String[0]);
+    }
+
+    private static int parseIntOrDefault(String value, int defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
+    private void logEntering() {
+        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+    }
 }
