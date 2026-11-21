@@ -9,7 +9,7 @@ import java.util.List;
 @Component
 @ConfigurationProperties(prefix = "cmmp")
 public class PropertiesCmmpSync {
-    private List<String> bases = new ArrayList<>();
+    final private List<String> bases = new ArrayList<>();
 
     public List<String> getBases() {
         return bases;
