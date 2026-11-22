@@ -12,7 +12,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.query.LdapQuery;
@@ -25,6 +24,7 @@ import javax.naming.directory.ModificationItem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -253,7 +253,7 @@ public class CMMPDILdapQueryService {
 
             if ( user != null ) {
 
-                String _datePart = LocalDate.now().format(DATE_FORMATTER);
+                String _datePart = LocalDate.now(ZoneId.systemDefault()).format(DATE_FORMATTER);
                 String _eventNum = String.format("%s%08d", _datePart, ThreadLocalRandom.current().nextInt(100_000_000));
 
                 _logMessage =
@@ -294,7 +294,7 @@ public class CMMPDILdapQueryService {
 
             if ( group != null ) {
 
-                String _datePart = LocalDate.now().format(DATE_FORMATTER);
+                String _datePart = LocalDate.now(ZoneId.systemDefault()).format(DATE_FORMATTER);
                 String _eventNum = String.format("%s%08d", _datePart, ThreadLocalRandom.current().nextInt(100_000_000));
 
                 _logMessage =
@@ -343,7 +343,7 @@ public class CMMPDILdapQueryService {
 
             if ( _user != null ) {
 
-                String _datePart = LocalDate.now().format(DATE_FORMATTER);
+                String _datePart = LocalDate.now(ZoneId.systemDefault()).format(DATE_FORMATTER);
                 String _eventNum = String.format("%s%08d", _datePart, ThreadLocalRandom.current().nextInt(100_000_000));
 
                 _logMessage = String.format("Going to removing user object with smtp=%s from CMMP-DI directory, this event is marked as %s", pSmtpAddress, _eventNum);

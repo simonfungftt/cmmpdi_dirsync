@@ -1,6 +1,5 @@
 package com.ctg.innovic.cmmpdi.dirsync.service.impl;
 
-import com.ctg.innovic.cmmpdi.dirsync.config.ApplicationConfig;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.service.CMMPLdapService;
@@ -14,7 +13,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.query.LdapQuery;
@@ -29,15 +27,18 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
     private static final Logger logger = LogManager.getLogger(CMMPLdapQueryService.class);
 
-    @Autowired
-    private ApplicationConfig applicationConfig;
+    //private final ApplicationConfig applicationConfig;
+    private final LdapTemplate ldapTemplate;
+    private final DataSyncManager dataSyncManager;
 
-    @Autowired
-    @Qualifier("cmmpLdapTemplate")
-    private LdapTemplate ldapTemplate;
-
-    @Autowired
-    private DataSyncManager dataSyncManager;
+    public CMMPLdapQueryService(
+            //ApplicationConfig applicationConfig,
+            @Qualifier("cmmpLdapTemplate") LdapTemplate ldapTemplate,
+            DataSyncManager dataSyncManager) {
+        //this.applicationConfig = applicationConfig;
+        this.ldapTemplate = ldapTemplate;
+        this.dataSyncManager = dataSyncManager;
+    }
 
 
     public CMMPExchangeLdapGroup dipGroupBySMTP(@NotNull String pSMTP) {

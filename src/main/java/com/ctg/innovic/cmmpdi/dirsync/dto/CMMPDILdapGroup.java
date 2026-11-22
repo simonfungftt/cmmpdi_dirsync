@@ -9,6 +9,7 @@ import org.springframework.ldap.odm.annotations.Id;
 import javax.naming.Name;
 import javax.naming.ldap.LdapName;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -161,5 +162,10 @@ public final class CMMPDILdapGroup {
             return Objects.equals(this.email, that.email);
         }
         return this.email.equalsIgnoreCase(that.email);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.email != null ? this.email.toLowerCase(Locale.ROOT) : null);
     }
 }

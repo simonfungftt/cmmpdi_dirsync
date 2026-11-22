@@ -12,7 +12,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.LdapTemplate;
@@ -73,7 +72,8 @@ public class CMMPDILdapGroupService {
 
         List<CMMPDILdapGroup> result = ldapTemplate.find(query, CMMPDILdapGroup.class);
 
-        logger.info(String.format("%06d group have been fetched from directory", result.size()));
+        _logMessage = String.format("%06d group have been fetched from directory", result.size());
+        logger.log(Level.INFO, _logMessage);
 
         return result;
     }

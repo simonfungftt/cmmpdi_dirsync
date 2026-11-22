@@ -7,9 +7,7 @@ import com.unboundid.util.NotNull;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.yaml.snakeyaml.scanner.Constant;
 
 import java.util.HashMap;
 import java.util.List;
@@ -20,13 +18,13 @@ public class CMMPCacheService {
 
     private static final Logger logger = LogManager.getLogger(CMMPCacheService.class);
 
-    private CMMPLdapQueryService cmmpLdapQueryService;
+    private final CMMPLdapQueryService cmmpLdapQueryService;
 
-    private Map<String, String> cmmpDN2SmtpMap;
+    private final Map<String, String> cmmpDN2SmtpMap;
 
-    private Map<String, CMMPExchangeLdapUser> cmmpSmtp2UserMap;
+    private final Map<String, CMMPExchangeLdapUser> cmmpSmtp2UserMap;
 
-    private Map<String, CMMPExchangeLdapGroup> cmmpSmtp2GroupMap;
+    private final Map<String, CMMPExchangeLdapGroup> cmmpSmtp2GroupMap;
 
 
     public CMMPCacheService(CMMPLdapQueryService cmmpLdapQueryService) {

@@ -31,7 +31,7 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
     private static final int ACTION_BOTH_EXISTS = 2;
     private static final int ACTION_EXISTS_IN_NL_ONLY = 3;
 
-    private final DataSyncManager dataSyncManager;
+    //private final DataSyncManager dataSyncManager;
     private final PropertiesCmmpSync propertiesCmmpSync;
     private final CMMPCacheService exchangeCacheService;
     private final CMMPLdapQueryService exchangeLdapQueryService;
@@ -42,7 +42,7 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
     private final String cmmpBDOBaseOU;
 
     public FullSyncCMMP2CMMPDIRunner(
-            DataSyncManager dataSyncManager,
+            //DataSyncManager dataSyncManager,
             PropertiesCmmpSync propertiesCmmpSync,
             CMMPCacheService exchangeCacheService,
             CMMPLdapQueryService exchangeLdapQueryService,
@@ -51,7 +51,7 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
             CMMPDILdapCacheService cmmpdiLdapCacheService,
             @Value("${cmmpdi.bdo.baseOU}") String cmmpdiBDOBaseOU,
             @Value("${cmmp.bdo.baseOU}") String cmmpBDOBaseOU) {
-        this.dataSyncManager = dataSyncManager;
+        //this.dataSyncManager = dataSyncManager;
         this.propertiesCmmpSync = propertiesCmmpSync;
         this.exchangeCacheService = exchangeCacheService;
         this.exchangeLdapQueryService = exchangeLdapQueryService;

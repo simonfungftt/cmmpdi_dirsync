@@ -1,14 +1,11 @@
 package com.ctg.innovic.cmmpdi.dirsync.runner;
 
-import com.ctg.innovic.cmmpdi.dirsync.config.PropertiesCmmpSync;
 import com.ctg.innovic.cmmpdi.dirsync.service.impl.CMMPDILdapCacheService;
 import com.ctg.innovic.cmmpdi.dirsync.service.impl.CMMPDILdapWGDService;
 import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -18,18 +15,18 @@ public class ConsolidateWGDRunner implements ApplicationRunner {
 
     private static Logger logger = LogManager.getLogger(ConsolidateWGDRunner.class);
 
-    private final String contactInputFileDirectory;
-    private final PropertiesCmmpSync propertiesCmmpSync;
+    //private final String contactInputFileDirectory;
+    //private final PropertiesCmmpSync propertiesCmmpSync;
     private final CMMPDILdapWGDService cmmpdiLdapWGDService;
     private final CMMPDILdapCacheService cmmpdiLdapCacheService;
 
     public ConsolidateWGDRunner(
-            @Value("${input.user.inputFileDirectory}") String contactInputFileDirectory,
-            PropertiesCmmpSync propertiesCmmpSync,
+            //@Value("${input.user.inputFileDirectory}") String contactInputFileDirectory,
+            //PropertiesCmmpSync propertiesCmmpSync,
             CMMPDILdapWGDService cmmpdiLdapWGDService,
             CMMPDILdapCacheService cmmpdiLdapCacheService) {
-        this.contactInputFileDirectory = contactInputFileDirectory;
-        this.propertiesCmmpSync = propertiesCmmpSync;
+        //this.contactInputFileDirectory = contactInputFileDirectory;
+       // this.propertiesCmmpSync = propertiesCmmpSync;
         this.cmmpdiLdapWGDService = cmmpdiLdapWGDService;
         this.cmmpdiLdapCacheService = cmmpdiLdapCacheService;
     }

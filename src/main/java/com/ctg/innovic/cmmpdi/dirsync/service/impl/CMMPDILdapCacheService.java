@@ -10,7 +10,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -28,7 +27,7 @@ public class CMMPDILdapCacheService {
 
     private static final Logger logger = LogManager.getLogger(CMMPDILdapCacheService.class);
 
-    private CMMPDILdapQueryService ldapQueryService;
+    private final CMMPDILdapQueryService ldapQueryService;
 
     private final Map<String, CMMPDILdapUser> cmmpdiUserSMTP2DnMap;
     private final Map<String, CMMPDILdapGroup> cmmpdiGroupSMTP2DnMap;
