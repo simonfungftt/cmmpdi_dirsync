@@ -18,17 +18,21 @@ public class ConsolidateWGDRunner implements ApplicationRunner {
 
     private static Logger logger = LogManager.getLogger(ConsolidateWGDRunner.class);
 
-    @Value("${input.user.inputFileDirectory}")
-    private String contactInputFileDirectory;
+    private final String contactInputFileDirectory;
+    private final PropertiesCmmpSync propertiesCmmpSync;
+    private final CMMPDILdapWGDService cmmpdiLdapWGDService;
+    private final CMMPDILdapCacheService cmmpdiLdapCacheService;
 
-    @Autowired
-    private PropertiesCmmpSync propertiesCmmpSync;
-
-    @Autowired
-    private CMMPDILdapWGDService cmmpdiLdapWGDService;
-
-    @Autowired
-    private CMMPDILdapCacheService cmmpdiLdapCacheService;
+    public ConsolidateWGDRunner(
+            @Value("${input.user.inputFileDirectory}") String contactInputFileDirectory,
+            PropertiesCmmpSync propertiesCmmpSync,
+            CMMPDILdapWGDService cmmpdiLdapWGDService,
+            CMMPDILdapCacheService cmmpdiLdapCacheService) {
+        this.contactInputFileDirectory = contactInputFileDirectory;
+        this.propertiesCmmpSync = propertiesCmmpSync;
+        this.cmmpdiLdapWGDService = cmmpdiLdapWGDService;
+        this.cmmpdiLdapCacheService = cmmpdiLdapCacheService;
+    }
 
     @Override
     public void run(ApplicationArguments args) {

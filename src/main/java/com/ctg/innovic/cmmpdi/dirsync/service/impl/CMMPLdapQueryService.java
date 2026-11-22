@@ -169,13 +169,12 @@ public class CMMPLdapQueryService implements CMMPLdapService {
      */
     public List<CMMPExchangeLdapGroup> getLastModifiedGroupUnderOU(@NotNull String pOU, @NotNull Instant pLastSyncTime) {
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
-        logger.log(Level.TRACE, _logMessage);
+        logEntering();
 
         // Define your target timestamp
         String formattedTime = LdapTimeUtils.toAdGeneralizedTime(pLastSyncTime);
 
-        _logMessage = String.format("Trying to fetch CMMP users under OU %s and modified time after %s", pOU, formattedTime);
+        String _logMessage = String.format("Trying to fetch CMMP group under OU %s and modified time after %s", pOU, formattedTime);
         logger.log(Level.INFO, _logMessage);
 
         LdapQuery _query = LdapQueryBuilder.query()
@@ -206,6 +205,8 @@ public class CMMPLdapQueryService implements CMMPLdapService {
         return _result;
     }
 
-
+    private void logEntering() {
+        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+    }
 
 }

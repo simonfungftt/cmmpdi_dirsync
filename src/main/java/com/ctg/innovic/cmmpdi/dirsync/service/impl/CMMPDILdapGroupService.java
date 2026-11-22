@@ -37,18 +37,22 @@ public class CMMPDILdapGroupService {
 
     private static Logger logger = LogManager.getLogger(CMMPDILdapGroupService.class);
 
-    @Autowired
-    private CMMPDILdapCacheService cmmpdiLdapCacheService;
+    private final CMMPDILdapCacheService cmmpdiLdapCacheService;
+    private final CMMPCacheService exchangeCacheService;
+    private final LdapTemplate ldapTemplate;
+    private final CMMPDILdapQueryService cmmpdiLdapQueryService;
 
-    @Autowired
-    private CMMPCacheService exchangeCacheService;
+    public CMMPDILdapGroupService(
+            CMMPDILdapCacheService cmmpdiLdapCacheService,
+            CMMPCacheService exchangeCacheService,
+            @Qualifier("cmmpdiLdapTemplate") LdapTemplate ldapTemplate,
+            CMMPDILdapQueryService cmmpdiLdapQueryService) {
+        this.cmmpdiLdapCacheService = cmmpdiLdapCacheService;
+        this.exchangeCacheService = exchangeCacheService;
+        this.ldapTemplate = ldapTemplate;
+        this.cmmpdiLdapQueryService = cmmpdiLdapQueryService;
+    }
 
-    @Autowired
-    @Qualifier("cmmpdiLdapTemplate")
-    private LdapTemplate ldapTemplate;
-
-    @Autowired
-    private CMMPDILdapQueryService cmmpdiLdapQueryService;
 
     private void logEntering() {
         logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());

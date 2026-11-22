@@ -28,14 +28,23 @@ public class CMMPDILdapCacheService {
 
     private static final Logger logger = LogManager.getLogger(CMMPDILdapCacheService.class);
 
-    @Autowired
     private CMMPDILdapQueryService ldapQueryService;
 
-    private final Map<String, CMMPDILdapUser> cmmpdiUserSMTP2DnMap = new ConcurrentHashMap<>();
-    private final Map<String, CMMPDILdapGroup> cmmpdiGroupSMTP2DnMap = new ConcurrentHashMap<>();
+    private final Map<String, CMMPDILdapUser> cmmpdiUserSMTP2DnMap;
+    private final Map<String, CMMPDILdapGroup> cmmpdiGroupSMTP2DnMap;
 
-    private final Map<String, CMMPDILdapUser> cmmpdiWGDUserSMTP2DnMap = new ConcurrentHashMap<>();
-    private final Map<String, CMMPDILdapGroup> cmmpdiWGDGroupSMTP2DnMap = new ConcurrentHashMap<>();
+    private final Map<String, CMMPDILdapUser> cmmpdiWGDUserSMTP2DnMap;
+    private final Map<String, CMMPDILdapGroup> cmmpdiWGDGroupSMTP2DnMap;
+
+
+    public CMMPDILdapCacheService(CMMPDILdapQueryService ldapQueryService) {
+        this.ldapQueryService = ldapQueryService;
+
+        cmmpdiUserSMTP2DnMap = new ConcurrentHashMap<>();
+        cmmpdiGroupSMTP2DnMap = new ConcurrentHashMap<>();
+        cmmpdiWGDUserSMTP2DnMap = new ConcurrentHashMap<>();
+        cmmpdiWGDGroupSMTP2DnMap = new ConcurrentHashMap<>();
+    }
 
     // -------------------------------------------------------------------------
     // Cache Initialization

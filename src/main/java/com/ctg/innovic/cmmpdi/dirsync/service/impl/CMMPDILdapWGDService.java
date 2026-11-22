@@ -25,14 +25,18 @@ public class CMMPDILdapWGDService {
 
     private static final Logger logger = LogManager.getLogger(CMMPDILdapWGDService.class);
 
-    @Value("${execution.dryrun}")
-    private boolean executionDryrun;
+    private final boolean executionDryrun;
+    private final CMMPDILdapCacheService cmmpdiLdapCacheService;
+    private final CMMPDILdapUserService cmmpdiLdapUserService;
 
-    @Autowired
-    private CMMPDILdapCacheService cmmpdiLdapCacheService;
-
-    @Autowired
-    private CMMPDILdapUserService cmmpdiLdapUserService;
+    public CMMPDILdapWGDService(
+            @Value("${execution.dryrun:false}") boolean executionDryrun,
+            CMMPDILdapCacheService cmmpdiLdapCacheService,
+            CMMPDILdapUserService cmmpdiLdapUserService) {
+        this.executionDryrun = executionDryrun;
+        this.cmmpdiLdapCacheService = cmmpdiLdapCacheService;
+        this.cmmpdiLdapUserService = cmmpdiLdapUserService;
+    }
 
 
 

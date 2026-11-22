@@ -23,20 +23,24 @@ public class DeltaSyncCMMP2CMMPDIRunner implements ApplicationRunner {
 
     private static Logger logger = LogManager.getLogger(DeltaSyncCMMP2CMMPDIRunner.class);
 
-    @Autowired
-    private DataSyncManager dataSyncManager;
+    private final DataSyncManager dataSyncManager;
+    private final PropertiesCmmpSync propertiesCmmpSync;
+    private final CMMPLdapQueryService cmmpLdapQueryService;
+    private final CMMPDILdapUserService cmmpdiLdapUserService;
+    private final CMMPDILdapGroupService cmmpdiLdapGroupService;
 
-    @Autowired
-    private PropertiesCmmpSync propertiesCmmpSync;
-
-    @Autowired
-    private CMMPLdapQueryService cmmpLdapQueryService;
-
-    @Autowired
-    private CMMPDILdapUserService cmmpdiLdapUserService;
-
-    @Autowired
-    private CMMPDILdapGroupService cmmpdiLdapGroupService;
+    public DeltaSyncCMMP2CMMPDIRunner(
+            DataSyncManager dataSyncManager,
+            PropertiesCmmpSync propertiesCmmpSync,
+            CMMPLdapQueryService cmmpLdapQueryService,
+            CMMPDILdapUserService cmmpdiLdapUserService,
+            CMMPDILdapGroupService cmmpdiLdapGroupService) {
+        this.dataSyncManager = dataSyncManager;
+        this.propertiesCmmpSync = propertiesCmmpSync;
+        this.cmmpLdapQueryService = cmmpLdapQueryService;
+        this.cmmpdiLdapUserService = cmmpdiLdapUserService;
+        this.cmmpdiLdapGroupService = cmmpdiLdapGroupService;
+    }
 
     @Override
     public void run(ApplicationArguments args) throws Exception {

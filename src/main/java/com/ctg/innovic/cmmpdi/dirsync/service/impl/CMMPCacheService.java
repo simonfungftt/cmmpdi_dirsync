@@ -20,7 +20,6 @@ public class CMMPCacheService {
 
     private static final Logger logger = LogManager.getLogger(CMMPCacheService.class);
 
-    @Autowired
     private CMMPLdapQueryService cmmpLdapQueryService;
 
     private Map<String, String> cmmpDN2SmtpMap;
@@ -29,10 +28,12 @@ public class CMMPCacheService {
 
     private Map<String, CMMPExchangeLdapGroup> cmmpSmtp2GroupMap;
 
-    public CMMPCacheService() {
+
+    public CMMPCacheService(CMMPLdapQueryService cmmpLdapQueryService) {
         this.cmmpDN2SmtpMap = new HashMap<>();
         this.cmmpSmtp2UserMap = new HashMap<>();
         this.cmmpSmtp2GroupMap = new HashMap<>();
+        this.cmmpLdapQueryService = cmmpLdapQueryService;
     }
 
     public void initDN2SMTP() {

@@ -37,9 +37,11 @@ public class CMMPDILdapQueryService {
 
     private static Logger logger = LogManager.getLogger(CMMPDILdapQueryService.class);
 
-    @Autowired
-    @Qualifier("cmmpdiLdapTemplate")
-    private LdapTemplate ldapTemplate;
+    private final LdapTemplate ldapTemplate;
+
+    public CMMPDILdapQueryService(@Qualifier("cmmpdiLdapTemplate") LdapTemplate ldapTemplate) {
+        this.ldapTemplate = ldapTemplate;
+    }
 
     /**
      * LDAP query all user objects from CMMP-DI under LDAP_BASE_OU_BDO

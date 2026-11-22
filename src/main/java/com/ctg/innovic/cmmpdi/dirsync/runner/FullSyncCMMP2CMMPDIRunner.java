@@ -27,37 +27,40 @@ import java.util.Set;
 public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
 
     private static Logger logger = LogManager.getLogger(FullSyncCMMP2CMMPDIRunner.class);
-
     private static final int ACTION_EXISTS_IN_EX_ONLY = 1;
     private static final int ACTION_BOTH_EXISTS = 2;
     private static final int ACTION_EXISTS_IN_NL_ONLY = 3;
 
-    @Autowired
-    private DataSyncManager dataSyncManager;
+    private final DataSyncManager dataSyncManager;
+    private final PropertiesCmmpSync propertiesCmmpSync;
+    private final CMMPCacheService exchangeCacheService;
+    private final CMMPLdapQueryService exchangeLdapQueryService;
+    private final CMMPDILdapUserService ningtonLdapUserService;
+    private final CMMPDILdapGroupService ningtonLdapGroupService;
+    private final CMMPDILdapCacheService cmmpdiLdapCacheService;
+    private final String cmmpdiBDOBaseOU;
+    private final String cmmpBDOBaseOU;
 
-    @Autowired
-    private PropertiesCmmpSync propertiesCmmpSync;
-
-    @Autowired
-    private CMMPCacheService exchangeCacheService;
-
-    @Autowired
-    private CMMPLdapQueryService exchangeLdapQueryService;
-
-    @Autowired
-    private CMMPDILdapUserService ningtonLdapUserService;
-
-    @Autowired
-    private CMMPDILdapGroupService ningtonLdapGroupService;
-
-    @Autowired
-    private CMMPDILdapCacheService cmmpdiLdapCacheService;
-
-    @Value("${cmmpdi.bdo.baseOU}")
-    private String cmmpdiBDOBaseOU;
-
-    @Value("${cmmp.bdo.baseOU}")
-    private String cmmpBDOBaseOU;
+    public FullSyncCMMP2CMMPDIRunner(
+            DataSyncManager dataSyncManager,
+            PropertiesCmmpSync propertiesCmmpSync,
+            CMMPCacheService exchangeCacheService,
+            CMMPLdapQueryService exchangeLdapQueryService,
+            CMMPDILdapUserService ningtonLdapUserService,
+            CMMPDILdapGroupService ningtonLdapGroupService,
+            CMMPDILdapCacheService cmmpdiLdapCacheService,
+            @Value("${cmmpdi.bdo.baseOU}") String cmmpdiBDOBaseOU,
+            @Value("${cmmp.bdo.baseOU}") String cmmpBDOBaseOU) {
+        this.dataSyncManager = dataSyncManager;
+        this.propertiesCmmpSync = propertiesCmmpSync;
+        this.exchangeCacheService = exchangeCacheService;
+        this.exchangeLdapQueryService = exchangeLdapQueryService;
+        this.ningtonLdapUserService = ningtonLdapUserService;
+        this.ningtonLdapGroupService = ningtonLdapGroupService;
+        this.cmmpdiLdapCacheService = cmmpdiLdapCacheService;
+        this.cmmpdiBDOBaseOU = cmmpdiBDOBaseOU;
+        this.cmmpBDOBaseOU = cmmpBDOBaseOU;
+    }
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
