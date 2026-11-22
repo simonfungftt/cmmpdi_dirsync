@@ -359,7 +359,11 @@ public final class CMMPDILdapUser {
     }
 
     public String getExtensionAttribute7() {
-        return extensionAttribute7;
+        if (extensionAttribute7 == null || extensionAttribute7.isBlank() || "null".equalsIgnoreCase(extensionAttribute7.trim())) {
+            return "3";
+        }
+
+        return extensionAttribute7.trim();
     }
 
     public void setExtensionAttribute7(String extensionAttribute7) {

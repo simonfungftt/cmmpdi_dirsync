@@ -378,7 +378,11 @@ public class CMMPExchangeLdapUser {
     }
 
     public String getExtensionAttribute1() {
-        return extensionAttribute1;
+        if (extensionAttribute1 == null || extensionAttribute1.isBlank() || "null".equalsIgnoreCase(extensionAttribute1.trim())) {
+            return "0";
+        }
+
+        return extensionAttribute1.trim();
     }
 
     public void setExtensionAttribute1(String extensionAttribute1) {
@@ -386,7 +390,11 @@ public class CMMPExchangeLdapUser {
     }
 
     public String getExtensionAttribute3() {
-        return extensionAttribute3;
+        if (extensionAttribute3 == null || extensionAttribute3.isBlank() || "null".equalsIgnoreCase(extensionAttribute3.trim())) {
+            return "3";
+        }
+
+        return extensionAttribute3.trim();
     }
 
     public void setExtensionAttribute3(String extensionAttribute3) {

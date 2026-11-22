@@ -11,14 +11,12 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ldap.NameAlreadyBoundException;
 import org.springframework.ldap.UncategorizedLdapException;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.LdapTemplate;
-import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.ldap.support.LdapNameBuilder;
@@ -35,7 +33,6 @@ import javax.naming.directory.ModificationItem;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.ZoneOffset;
@@ -49,24 +46,39 @@ public class CMMPDILdapUserService {
     private static final DateTimeFormatter LDAP_TIMESTAMP_FORMAT =
             DateTimeFormatter.ofPattern("yyyyMMddHHmmss.S'Z'").withZone(ZoneOffset.UTC);
 
-    @Value("${cmmpdi.bdo.baseOU}")
-    private String cmmpdiBDOBaseOU;
+    //@Value("${cmmpdi.bdo.baseOU}")
+    //private final String cmmpdiBDOBaseOU;
 
-    @Value("${cmmpdi.wgd.baseOU}")
-    private String cmmpdiWGDBaseOU;
+    //@Value("${cmmpdi.wgd.baseOU}")
+    //private final String cmmpdiWGDBaseOU;
 
-    @Value("${execution.dryrun}")
-    private boolean executionDryrun;
+    //@Value("${execution.dryrun}")
+    private final boolean executionDryrun;
 
-    @Autowired
-    private CMMPDILdapCacheService cmmpdiLdapCacheService;
+    //@Autowired
+    private final CMMPDILdapCacheService cmmpdiLdapCacheService;
 
-    @Autowired
-    @Qualifier("cmmpdiLdapTemplate")
-    private LdapTemplate ldapTemplate;
+    //@Autowired
+    //@Qualifier("cmmpdiLdapTemplate")
+    private final LdapTemplate ldapTemplate;
 
-    @Autowired
-    private CMMPDILdapQueryService cmmpdiLdapQueryService;
+    //@Autowired
+    private final CMMPDILdapQueryService cmmpdiLdapQueryService;
+
+    public CMMPDILdapUserService(
+            @Value("${execution.dryrun:false}") boolean executionDryrun,
+            //@Value("${cmmpdi.bdo.baseOU}") String cmmpdiBDOBaseOU,
+            //@Value("${cmmpdi.wgd.baseOU}") String cmmpdiWGDBaseOU,
+            @Qualifier("cmmpdiLdapTemplate") LdapTemplate ldapTemplate,
+            CMMPDILdapCacheService cacheService,
+            CMMPDILdapQueryService cmmpdiLdapQueryService) {
+        this.executionDryrun = executionDryrun;
+        //this.cmmpdiBDOBaseOU = cmmpdiBDOBaseOU;
+        //this.cmmpdiWGDBaseOU = cmmpdiWGDBaseOU;
+        this.ldapTemplate = ldapTemplate;
+        this.cmmpdiLdapCacheService = cacheService;
+        this.cmmpdiLdapQueryService = cmmpdiLdapQueryService;
+    }
 
     // -------------------------------------------------------------------------
     // Public API
@@ -95,7 +107,7 @@ public class CMMPDILdapUserService {
     public boolean createOrUpdateCMMPDIUser(@NotNull CMMPExchangeLdapUser exchangeUser) throws InvalidNameException {
         logEntering();
 
-        String smtp = StringUtils.trimToEmpty(exchangeUser.getMail()).toLowerCase();
+        String smtp = StringUtils.trimToEmpty(exchangeUser.getMail()).toLowerCase(Locale.ROOT);
         CMMPDILdapUser existingUser = this.cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(smtp);
 
         if (existingUser != null) {
@@ -106,7 +118,7 @@ public class CMMPDILdapUserService {
         CMMPDILdapGroup existingGroup = cmmpdiLdapCacheService.getCMMPDIGroupDnBySMTP(smtp);
         if (existingGroup != null) {
             logger.info("Detected SMTP address {} already used by group {}, removing group object.",
-                    smtp.toLowerCase(), existingGroup.getDn());
+                    smtp, existingGroup.getDn());
 
             if (cmmpdiLdapQueryService.deleteCMMPDIBDOObjectByGroup(existingGroup)) {
                 cmmpdiLdapCacheService.removeGroupCache(existingGroup);
@@ -114,7 +126,7 @@ public class CMMPDILdapUserService {
         }
 
         logger.info("Going to create user object with SMTP address = {}, original DN = {}",
-                smtp.toLowerCase(), exchangeUser.getDn());
+                smtp.toLowerCase(Locale.ROOT), exchangeUser.getDn());
         return createCMMPDIUser(transformToCMMPDIUser(exchangeUser, null));
     }
 
@@ -204,7 +216,7 @@ public class CMMPDILdapUserService {
         if ( user.getgCert() != null ) {
             context.setAttributeValue(Constants.LDAP_FIELD_GCERT, toBase64Cert(user.getgCert()));
         }
-        if ( user.getgCert() != null ) {
+        if ( user.getUserCert() != null ) {
             context.setAttributeValue(Constants.LDAP_FIELD_ECERT, toBase64Cert(user.getUserCert()));
         }
 
@@ -219,7 +231,7 @@ public class CMMPDILdapUserService {
 
     private boolean updateCMMPDIUser(CMMPExchangeLdapUser exchangeUser, CMMPDILdapUser cmmpdiUser) {
         if (cmmpdiUser == null) {
-            return true;
+            return false;
         }
         int extAttr3 = parseIntOrDefault(cmmpdiUser.getExtensionAttribute3(), -1);
         // Only update eligible non-mailbox entries (extensionAttribute3 between 0 and 3)
@@ -331,8 +343,8 @@ public class CMMPDILdapUserService {
         context.setAttributeValue(Constants.LDAP_FIELD_GIVEN_NAME, user.getFirstName());
         context.setAttributeValue(Constants.LDAP_FIELD_DISPLAY_NAME, user.getDisplayName());
         context.setAttributeValue(Constants.LDAP_FIELD_MAIL, user.getEmail());
-        context.setAttributeValue(Constants.LDAP_FIELD_EXT1, String.valueOf(user.getExtensionAttribute1()));
-        context.setAttributeValue(Constants.LDAP_FIELD_EXT3, String.valueOf(user.getExtensionAttribute3()));
+        context.setAttributeValue(Constants.LDAP_FIELD_EXT1, user.getExtensionAttribute1());
+        context.setAttributeValue(Constants.LDAP_FIELD_EXT3, user.getExtensionAttribute3());
 
         context.setAttributeValue(Constants.LDAP_FIELD_PROXY_ADDRESS, user.getProxyAddresses());
 

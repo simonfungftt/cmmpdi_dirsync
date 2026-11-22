@@ -62,7 +62,7 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
 
-        if ( args.containsOption(Constants.ARGS_FULL) ) {
+        if ( args.containsOption(Constants.ARGS_FULL_USER) ) {
 
             String _logMessage = "Start running full directory sync to CMMP-DI";
             logger.log(Level.INFO, _logMessage);
@@ -71,8 +71,6 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
              * This process is to read CMMP LDAP information (by OU), and write into same OU
              */
             cmmpdiLdapCacheService.initCMMPDIBDO();
-
-            this.exchangeCacheService.initDN2SMTP();
 
             for (String _ou : propertiesCmmpSync.getBases() ) {
 
@@ -114,7 +112,6 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
                 }
 
                 // Find modified
-
                 List<String> _bothExistSMTPList = this.findDiffInUserLists(_exUsers, _ningtonUsers, ACTION_BOTH_EXISTS);
 
                 if ( logger.isDebugEnabled() ) {
@@ -138,7 +135,20 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
                 }
                 */
             }
+        }
 
+
+        if ( args.containsOption(Constants.ARGS_FULL_GRP) ) {
+
+            String _logMessage = "Start running full directory sync to CMMP-DI";
+            logger.log(Level.INFO, _logMessage);
+
+            /**
+             * This process is to read CMMP LDAP information (by OU), and write into same OU
+             */
+            cmmpdiLdapCacheService.initCMMPDIBDO();
+
+            this.exchangeCacheService.initDN2SMTP();
 
             for (String _ou : propertiesCmmpSync.getBases() ) {
 
@@ -179,7 +189,6 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
                     }
                 }
             }
-
         }
     }
 
@@ -301,9 +310,9 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
      */
     private String convertDnFromCMMP2CMMPDI(String source) {
 
-        String _buffer = source.replaceAll("OU=CMMPBDOs", "OU=BDO,OU=CMMPDI-BDOs")
-                            .replaceAll("OU=Users", "OU=User")
-                            .replaceAll("OU=Groups", "OU=Group");
+        String _buffer = source.replace("OU=CMMPBDOs", "OU=BDO,OU=CMMPDI-BDOs")
+                            .replace("OU=Users", "OU=User")
+                            .replace("OU=Groups", "OU=Group");
 
         return _buffer;
     }

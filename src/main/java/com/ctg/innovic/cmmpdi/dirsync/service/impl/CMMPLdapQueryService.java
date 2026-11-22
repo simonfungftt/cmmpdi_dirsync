@@ -27,7 +27,7 @@ import java.util.List;
 @Service
 public class CMMPLdapQueryService implements CMMPLdapService {
 
-    private final static Logger logger = LogManager.getLogger(CMMPLdapQueryService.class);
+    private static final Logger logger = LogManager.getLogger(CMMPLdapQueryService.class);
 
     @Autowired
     private ApplicationConfig applicationConfig;

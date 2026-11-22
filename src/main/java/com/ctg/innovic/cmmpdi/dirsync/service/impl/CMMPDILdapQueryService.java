@@ -60,8 +60,7 @@ public class CMMPDILdapQueryService {
 
 
     private List<CMMPDILdapUser> listCMMPDIBDOorWGDUsers(@NotNull String searchBase) {
-
-        logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        logEntering();
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base(searchBase)
@@ -94,8 +93,7 @@ public class CMMPDILdapQueryService {
 
 
     private List<CMMPDILdapGroup> listCMMPDIBDOorWGDGroups(@NotNull String searchBase) {
-
-        logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        logEntering();
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base(searchBase)
@@ -151,8 +149,7 @@ public class CMMPDILdapQueryService {
 
     private List<CMMPDILdapUser> findUsersByEmailInternal(String email) {
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
-        logger.log(Level.TRACE, _logMessage);
+        logEntering();
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base(Constants.LDAP_BASE_OU_BDO)
@@ -170,7 +167,6 @@ public class CMMPDILdapQueryService {
                 .create();
 
             for ( CMMPDILdapUser _user : _result ) {
-                logger.trace( "DN = " + _user.getDn().toString() );
                 logger.trace( gson.toJson(_user) );
             }
         }
@@ -199,6 +195,8 @@ public class CMMPDILdapQueryService {
 
 
     private CMMPDILdapGroup findOneCMMPDIGroupByEmailInternal(String email) {
+
+        logEntering();
 
         logger.debug("Entering " + LogUtils.getCurrentMethodName() + " with search condition mail: '" + email + "'");
 
@@ -244,10 +242,9 @@ public class CMMPDILdapQueryService {
 
     public boolean deleteCMMPDIBDOObjectByUser(@NotNull CMMPDILdapUser user) {
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
-        logger.log(Level.TRACE, _logMessage);
+        logEntering();
 
-        _logMessage = "Trying to removing user object with smtp='" + user.getEmail().toLowerCase() + "' from CMMP-DI directory.";
+        String _logMessage = "Trying to removing user object with smtp='" + user.getEmail().toLowerCase() + "' from CMMP-DI directory.";
         logger.log(Level.INFO, _logMessage);
 
         try {
@@ -286,10 +283,9 @@ public class CMMPDILdapQueryService {
 
     public boolean deleteCMMPDIBDOObjectByGroup(@NotNull CMMPDILdapGroup group) {
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
-        logger.log(Level.TRACE, _logMessage);
+        logEntering();
 
-        _logMessage = "Trying to removing group object with smtp='" + group.getEmail().toLowerCase() + "' from CMMP-DI directory.";
+        String _logMessage = "Trying to removing group object with smtp='" + group.getEmail().toLowerCase() + "' from CMMP-DI directory.";
         logger.log(Level.INFO, _logMessage);
 
         try {
@@ -333,10 +329,9 @@ public class CMMPDILdapQueryService {
      */
     public boolean deleteCMMPDIObjectBySMTPAddress111(String pSmtpAddress) {
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
-        logger.log(Level.TRACE, _logMessage);
+        logEntering();
 
-        _logMessage = "Trying to removing object with smtp='" + pSmtpAddress + "' from CMMP-DI directory.";
+        String _logMessage = "Trying to removing object with smtp='" + pSmtpAddress + "' from CMMP-DI directory.";
         logger.log(Level.INFO, _logMessage);
 
         try {
@@ -461,7 +456,7 @@ public class CMMPDILdapQueryService {
      */
     private boolean updateGroupAttributes(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup, CMMPDILdapGroup pCMMPDILdapGroup) {
 
-        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        logEntering();
 
         Name dn = LdapNameBuilder.newInstance(pCMMPDILdapGroup.getDn()).build();
 
@@ -564,4 +559,7 @@ public class CMMPDILdapQueryService {
 //        return true;
 //    }
 
+    private void logEntering() {
+        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+    }
 }

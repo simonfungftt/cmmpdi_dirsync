@@ -142,8 +142,16 @@ public class CMMPDILdapCacheService {
         return new ArrayList<>(cmmpdiUserSMTP2DnMap.values());
     }
 
+    public List<CMMPDILdapGroup> getAllBDOGroupsFromBDOFromCache() {
+        return new ArrayList<>(cmmpdiGroupSMTP2DnMap.values());
+    }
+
     public List<CMMPDILdapUser> getWGDUsersFromWGDFromCache() {
         return new ArrayList<>(cmmpdiWGDUserSMTP2DnMap.values());
+    }
+
+    public List<CMMPDILdapGroup> getWGDGroupsFromWGDFromCache() {
+        return new ArrayList<>(this.cmmpdiWGDGroupSMTP2DnMap.values());
     }
 
     // -------------------------------------------------------------------------

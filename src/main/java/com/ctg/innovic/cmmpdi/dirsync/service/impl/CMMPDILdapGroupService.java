@@ -5,14 +5,13 @@ import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPDILdapUser;
 import com.ctg.innovic.cmmpdi.dirsync.dto.CMMPExchangeLdapGroup;
 import com.ctg.innovic.cmmpdi.dirsync.exception.DirSyncApplicationException;
 import com.ctg.innovic.cmmpdi.dirsync.utils.Constants;
-import com.ctg.innovic.cmmpdi.dirsync.utils.ListCompare;
 import com.ctg.innovic.cmmpdi.dirsync.utils.LogUtils;
+import com.unboundid.util.NotNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ldap.core.DirContextAdapter;
@@ -373,14 +372,13 @@ public class CMMPDILdapGroupService {
      * @param pCMMPDILdapGroup
      * @return
      */
-    private boolean updateGroupAttributes(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup, CMMPDILdapGroup pCMMPDILdapGroup) {
+    private boolean updateGroupAttributes(@NotNull CMMPExchangeLdapGroup pCMMPExchangeLdapGroup, @NotNull CMMPDILdapGroup pCMMPDILdapGroup) {
 
-        String _logMessage = "Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
-        logger.log(Level.TRACE, _logMessage);
+        logEntering();
 
         Name dn = LdapNameBuilder.newInstance(pCMMPDILdapGroup.getDn()).build();
 
-        _logMessage = "Going to update group attributes for "  + dn.toString() + "...";
+        String _logMessage = "Going to update group attributes for "  + dn.toString() + "...";
         logger.log(Level.INFO, _logMessage);
 
         List<ModificationItem> _list = new ArrayList<>();

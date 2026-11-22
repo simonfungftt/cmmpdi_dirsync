@@ -12,9 +12,11 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Entry(objectClasses = {"top", "group"})
 public final class CMMPExchangeLdapGroup {
@@ -26,7 +28,7 @@ public final class CMMPExchangeLdapGroup {
                     .appendFraction(ChronoField.MILLI_OF_SECOND, 1, 3, true)
                     .optionalEnd()
                     .appendOffset("+HHmm", "Z")
-                    .toFormatter();
+                    .toFormatter(Locale.ROOT);
 
     @Id
     @JsonIgnore
@@ -51,7 +53,7 @@ public final class CMMPExchangeLdapGroup {
     private String distinguishedName;
 
     @Attribute(name = "proxyAddresses")
-    private List<String> proxyAddresses = new ArrayList<>();
+    private String proxyAddresses;
 
     // Must be String: AD groups contain non-numeric values (e.g., "CMMP Enquiry RI", "Corritsdgroup|")
     @Attribute(name = "extensionAttribute1")
@@ -76,19 +78,25 @@ public final class CMMPExchangeLdapGroup {
     private String extensionAttribute10;
 
     @Attribute(name = "member")
-    private List<String> memberDNs = new ArrayList<>();
+    private List<String> memberDNs;
 
     @Attribute(name = "whenChanged", readonly = true)
     private String whenChanged;
 
+    @Attribute(name = "whenCreated", readonly = true)
+    private String whenCreated;
+
     // Populated by service after resolving memberDNs -> SMTP addresses
     @Transient
-    private List<String> memberSmtpAddresses = new ArrayList<>();
+    private List<String> memberSmtpAddresses;
 
     public CMMPExchangeLdapGroup() {
+        this.memberSmtpAddresses = new ArrayList<>();
+        this.memberDNs = new ArrayList<>();
     }
 
     // --- DN & Timestamp Helpers ---
+
     @JsonIgnore
     public Name getDn() {
         return dn;
@@ -108,71 +116,169 @@ public final class CMMPExchangeLdapGroup {
                 : null;
     }
 
+    @JsonIgnore
     public Instant getWhenChangedInstant() {
-        if (whenChanged == null || whenChanged.isBlank()) {
+        return parseGeneralizedTime(this.whenChanged);
+    }
+
+    @JsonIgnore
+    public Instant getWhenCreatedInstant() {
+        return parseGeneralizedTime(this.whenCreated);
+    }
+
+    private static Instant parseGeneralizedTime(String timestamp) {
+        if (timestamp == null || timestamp.isBlank()) {
             return null;
         }
         try {
-            return ZonedDateTime.parse(whenChanged, LDAP_GENERALIZED_TIME).toInstant();
-        } catch (Exception e) {
+            return ZonedDateTime.parse(timestamp, LDAP_GENERALIZED_TIME).toInstant();
+        } catch (DateTimeParseException e) {
             return null;
         }
     }
 
     // --- Getters & Setters ---
-    public String getCn() { return cn; }
-    public void setCn(String cn) { this.cn = cn; }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public String getMail() { return mail != null ? mail.toLowerCase() : null; }
-    public void setMail(String mail) { this.mail = mail; }
-
-    public String getMailNickname() { return mailNickname; }
-    public void setMailNickname(String mailNickname) { this.mailNickname = mailNickname; }
-
-    public String getDisplayName() { return displayName; }
-    public void setDisplayName(String displayName) { this.displayName = displayName; }
-
-    public String getDistinguishedName() { return distinguishedName; }
-    public void setDistinguishedName(String distinguishedName) { this.distinguishedName = distinguishedName; }
-
-    public List<String> getProxyAddresses() { return proxyAddresses; }
-    public void setProxyAddresses(List<String> proxyAddresses) {
-        this.proxyAddresses = proxyAddresses != null ? proxyAddresses : new ArrayList<>();
+    public String getCn() {
+        return cn;
     }
 
-    public String getExtensionAttribute1() { return extensionAttribute1; }
-    public void setExtensionAttribute1(String extensionAttribute1) { this.extensionAttribute1 = extensionAttribute1; }
+    public void setCn(String cn) {
+        this.cn = cn;
+    }
 
-    public String getExtensionAttribute3() { return extensionAttribute3; }
-    public void setExtensionAttribute3(String extensionAttribute3) { this.extensionAttribute3 = extensionAttribute3; }
+    public String getDescription() {
+        return description;
+    }
 
-    public String getExtensionAttribute4() { return extensionAttribute4; }
-    public void setExtensionAttribute4(String extensionAttribute4) { this.extensionAttribute4 = extensionAttribute4; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public String getExtensionAttribute5() { return extensionAttribute5; }
-    public void setExtensionAttribute5(String extensionAttribute5) { this.extensionAttribute5 = extensionAttribute5; }
+    public String getMail() {
+        return mail != null ? mail.toLowerCase(Locale.ROOT) : null;
+    }
 
-    public String getExtensionAttribute6() { return extensionAttribute6; }
-    public void setExtensionAttribute6(String extensionAttribute6) { this.extensionAttribute6 = extensionAttribute6; }
+    public void setMail(String mail) {
+        this.mail = mail;
+    }
 
-    public String getExtensionAttribute7() { return extensionAttribute7; }
-    public void setExtensionAttribute7(String extensionAttribute7) { this.extensionAttribute7 = extensionAttribute7; }
+    public String getMailNickname() {
+        return mailNickname;
+    }
 
-    public String getExtensionAttribute10() { return extensionAttribute10; }
-    public void setExtensionAttribute10(String extensionAttribute10) { this.extensionAttribute10 = extensionAttribute10; }
+    public void setMailNickname(String mailNickname) {
+        this.mailNickname = mailNickname;
+    }
 
-    public List<String> getMemberDNs() { return memberDNs; }
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getDistinguishedName() {
+        return distinguishedName;
+    }
+
+    public void setDistinguishedName(String distinguishedName) {
+        this.distinguishedName = distinguishedName;
+    }
+
+    public String getProxyAddresses() {
+        return proxyAddresses;
+    }
+
+    public void setProxyAddresses(String proxyAddresses) {
+        this.proxyAddresses = proxyAddresses;
+    }
+
+    public String getExtensionAttribute1() {
+        return extensionAttribute1;
+    }
+
+    public void setExtensionAttribute1(String extensionAttribute1) {
+        this.extensionAttribute1 = extensionAttribute1;
+    }
+
+    public String getExtensionAttribute3() {
+        return extensionAttribute3;
+    }
+
+    public void setExtensionAttribute3(String extensionAttribute3) {
+        this.extensionAttribute3 = extensionAttribute3;
+    }
+
+    public String getExtensionAttribute4() {
+        return extensionAttribute4;
+    }
+
+    public void setExtensionAttribute4(String extensionAttribute4) {
+        this.extensionAttribute4 = extensionAttribute4;
+    }
+
+    public String getExtensionAttribute5() {
+        return extensionAttribute5;
+    }
+
+    public void setExtensionAttribute5(String extensionAttribute5) {
+        this.extensionAttribute5 = extensionAttribute5;
+    }
+
+    public String getExtensionAttribute6() {
+        return extensionAttribute6;
+    }
+
+    public void setExtensionAttribute6(String extensionAttribute6) {
+        this.extensionAttribute6 = extensionAttribute6;
+    }
+
+    public String getExtensionAttribute7() {
+        return extensionAttribute7;
+    }
+
+    public void setExtensionAttribute7(String extensionAttribute7) {
+        this.extensionAttribute7 = extensionAttribute7;
+    }
+
+    public String getExtensionAttribute10() {
+        return extensionAttribute10;
+    }
+
+    public void setExtensionAttribute10(String extensionAttribute10) {
+        this.extensionAttribute10 = extensionAttribute10;
+    }
+
+    public List<String> getMemberDNs() {
+        return memberDNs;
+    }
+
     public void setMemberDNs(List<String> memberDNs) {
         this.memberDNs = memberDNs != null ? memberDNs : new ArrayList<>();
     }
 
-    public String getWhenChanged() { return whenChanged; }
-    public void setWhenChanged(String whenChanged) { this.whenChanged = whenChanged; }
+    public String getWhenChanged() {
+        return whenChanged;
+    }
 
-    public List<String> getMemberSmtpAddresses() { return memberSmtpAddresses; }
+    public void setWhenChanged(String whenChanged) {
+        this.whenChanged = whenChanged;
+    }
+
+    public String getWhenCreated() {
+        return whenCreated;
+    }
+
+    public void setWhenCreated(String whenCreated) {
+        this.whenCreated = whenCreated;
+    }
+
+    public List<String> getMemberSmtpAddresses() {
+        return memberSmtpAddresses;
+    }
+
     public void setMemberSmtpAddresses(List<String> memberSmtpAddresses) {
         this.memberSmtpAddresses = memberSmtpAddresses != null ? memberSmtpAddresses : new ArrayList<>();
     }

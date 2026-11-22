@@ -6,7 +6,8 @@ import java.util.Map;
 public class Constants {
 
     public static final String ARGS_DELTA = "delta";
-    public static final String ARGS_FULL = "full";
+    public static final String ARGS_FULL_USER = "full-user";
+    public static final String ARGS_FULL_GRP = "full-wgd";
     public static final String ARGS_WGD = "wgd";
 
     public static final String LOGGING_ENTERING = "Entering ";

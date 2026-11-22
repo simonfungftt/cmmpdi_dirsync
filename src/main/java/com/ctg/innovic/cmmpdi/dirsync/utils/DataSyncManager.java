@@ -1,5 +1,8 @@
 package com.ctg.innovic.cmmpdi.dirsync.utils;
 
+import com.ctg.innovic.cmmpdi.dirsync.service.impl.CMMPLdapQueryService;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -16,9 +19,11 @@ import java.time.temporal.ChronoUnit;
 @Service
 public class DataSyncManager {
 
+    private static final Logger logger = LogManager.getLogger(DataSyncManager.class);
+
     private static final Path STATE_FILE = Paths.get("data_sync_state.txt");
     private static final Instant DEFAULT_INITIAL_START = Instant.parse("2026-01-01T00:00:00Z");
-    private static final String LOG_INSTANT_FORMAT = "YYYY-MM-DD'T'hh:mm:ss";
+    private static final String LOG_INSTANT_FORMAT = "yyyy-MM-DD'T'hh:mm:ss";
 
 
     public Instant getLastSyncTime() {
@@ -33,7 +38,7 @@ public class DataSyncManager {
             return Instant.parse(content).minus(2, ChronoUnit.MINUTES);
         }
         catch (Exception e) {
-            System.err.println("Could not read state file, using default start: " + e.getMessage());
+            logger.error("Could not read state file, using default start: " + e.getMessage());
             return DEFAULT_INITIAL_START;
         }
     }
