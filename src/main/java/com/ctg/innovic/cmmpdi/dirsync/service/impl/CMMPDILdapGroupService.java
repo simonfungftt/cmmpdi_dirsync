@@ -182,6 +182,8 @@ public class CMMPDILdapGroupService {
         Set<String> translatedMemberDns = new LinkedHashSet<>();
 
         for (String eachMemberDn : sourceMemberDns) {
+            logger.log(Level.DEBUG, String.format(
+                    "Trying to query memory cache using DN %s", eachMemberDn));
             String memberSmtp = exchangeCacheService.lookupSmtpByCMMPDN(eachMemberDn);
             if (memberSmtp == null || memberSmtp.isBlank()) {
                 logger.log(Level.WARN, String.format(

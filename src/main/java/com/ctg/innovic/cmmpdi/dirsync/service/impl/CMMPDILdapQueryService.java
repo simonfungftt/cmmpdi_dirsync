@@ -243,15 +243,14 @@ public class CMMPDILdapQueryService {
 
 
     public boolean deleteCMMPDIBDOObjectByUser(@NotNull CMMPDILdapUser user) {
-
         logEntering();
-
-        String _logMessage = "Trying to removing user object with smtp='" + user.getEmail().toLowerCase() + "' from CMMP-DI directory.";
-        logger.log(Level.INFO, _logMessage);
 
         try {
 
             if ( user != null ) {
+
+                String _logMessage = "Trying to removing user object with smtp='" + user.getEmail().toLowerCase() + "' from CMMP-DI directory.";
+                logger.log(Level.INFO, _logMessage);
 
                 String _datePart = LocalDate.now(ZoneId.systemDefault()).format(DATE_FORMATTER);
                 String _eventNum = String.format("%s%08d", _datePart, ThreadLocalRandom.current().nextInt(100_000_000));
@@ -284,15 +283,14 @@ public class CMMPDILdapQueryService {
 
 
     public boolean deleteCMMPDIBDOObjectByGroup(@NotNull CMMPDILdapGroup group) {
-
         logEntering();
-
-        String _logMessage = "Trying to removing group object with smtp='" + group.getEmail().toLowerCase() + "' from CMMP-DI directory.";
-        logger.log(Level.INFO, _logMessage);
 
         try {
 
             if ( group != null ) {
+
+                String _logMessage = "Trying to removing group object with smtp='" + group.getEmail().toLowerCase() + "' from CMMP-DI directory.";
+                logger.log(Level.INFO, _logMessage);
 
                 String _datePart = LocalDate.now(ZoneId.systemDefault()).format(DATE_FORMATTER);
                 String _eventNum = String.format("%s%08d", _datePart, ThreadLocalRandom.current().nextInt(100_000_000));
@@ -423,12 +421,6 @@ public class CMMPDILdapQueryService {
         logger.log(Level.INFO, _logMessage);
 
         List<ModificationItem> _list = new ArrayList<>();
-
-        if ( CollectionUtils.isEmpty(_list) == false ) {
-        }
-        else {
-
-        }
 
         return true;
     }

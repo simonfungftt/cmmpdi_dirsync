@@ -185,7 +185,7 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
 
                     if ( _onlyExistsInExSMTPList.contains( _groupSmtp ) ) {
 
-                        _logMessage = String.format("Going to create mail contact %s under %s", _groupSmtp, _cmmpDIGroupOU);
+                        _logMessage = String.format("Going to create mail group %s under %s", _groupSmtp, _cmmpDIGroupOU);
                         logger.log(Level.DEBUG, _logMessage);
 
                         this.ningtonLdapGroupService.createCMMPDIGroup(_eachGroup);
