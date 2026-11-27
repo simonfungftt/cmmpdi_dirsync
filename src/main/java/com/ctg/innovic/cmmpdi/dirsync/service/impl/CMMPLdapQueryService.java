@@ -43,7 +43,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
     public CMMPExchangeLdapGroup dipGroupBySMTP(@NotNull String pSMTP) {
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        String _logMessage = Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
         logger.log(Level.TRACE, _logMessage);
 
         CMMPExchangeLdapGroup _group = null;
@@ -52,7 +52,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base("OU=CMMPBDOs")
-                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("group").and("mail").is(pSMTP);
+                .where(Constants.LdapField.OBJECT_CLASS).is("group").and("mail").is(pSMTP);
 
         List<CMMPExchangeLdapGroup> _result = ldapTemplate.find(_query, CMMPExchangeLdapGroup.class);
 
@@ -66,7 +66,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
     public CMMPExchangeLdapUser dipUserBySMTP(@NotNull String pSMTP) {
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        String _logMessage = Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
         logger.log(Level.TRACE, _logMessage);
 
         CMMPExchangeLdapUser _user = null;
@@ -75,9 +75,9 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base("OU=CMMPBDOs")
-                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("user").and("mail").is(pSMTP);
+                .where(Constants.LdapField.OBJECT_CLASS).is("user").and(Constants.LdapField.MAIL).is(pSMTP);
 
-        logger.log(Level.DEBUG, String.format(Constants.LOGGER_LDAPQUERY_DEBUG, _query.base(), _query.filter()));
+        logger.log(Level.DEBUG, String.format(Constants.Logging.LDAP_QUERY_DEBUG, _query.base(), _query.filter()));
 
         List<CMMPExchangeLdapUser> _result = ldapTemplate.find(_query, CMMPExchangeLdapUser.class);
 
@@ -91,7 +91,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
     public List<CMMPExchangeLdapUser> getAllUserUnderOU(@NotNull String pOU) {
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        String _logMessage = Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
         logger.log(Level.TRACE, _logMessage);
 
         return this.getLastModifiedUserUnderOU(pOU, Instant.EPOCH);
@@ -107,7 +107,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
      */
     public List<CMMPExchangeLdapUser> getLastModifiedUserUnderOU(@NotNull String pOU, @NotNull Instant pLastSyncTime) {
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        String _logMessage = Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
         logger.log(Level.TRACE, _logMessage);
 
         // Define your target timestamp
@@ -118,7 +118,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base(pOU)
-                .where("objectClass").is("user").and("whenChanged").gte(formattedTime);
+                .where(Constants.LdapField.OBJECT_CLASS).is("user").and(Constants.LdapField.WHEN_CHANGED).gte(formattedTime);
 
         _logMessage = String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter());
         logger.log(Level.DEBUG, _logMessage);
@@ -127,7 +127,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
             _query, CMMPExchangeLdapUser.class
         );
 
-        if ( logger.isDebugEnabled() ) {
+        if ( logger.isTraceEnabled() ) {
 
             Gson gson = new Gson();
 
@@ -135,7 +135,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
             for ( CMMPExchangeLdapUser _user : _result ) {
                 _logMessage = String.format("%6d %s", i++, gson.toJson(_user));
-                logger.log(Level.DEBUG, _logMessage);
+                logger.log(Level.TRACE, _logMessage);
             }
         }
 
@@ -154,7 +154,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
      */
     public List<CMMPExchangeLdapGroup> getAllGroupUnderOU(@NotNull String pOU) {
 
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+        logger.log(Level.TRACE, Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
 
         // Find all modified group since 1970-01-01
         return this.getLastModifiedGroupUnderOU(pOU, Instant.EPOCH);
@@ -180,7 +180,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base(pOU)
-                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("group").and("whenChanged").gte(formattedTime);
+                .where(Constants.LdapField.OBJECT_CLASS).is("group").and(Constants.LdapField.WHEN_CHANGED).gte(formattedTime);
 
         _logMessage = String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter());
         logger.log(Level.DEBUG, _logMessage);
@@ -189,7 +189,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
             _query, CMMPExchangeLdapGroup.class
         );
 
-        if ( logger.isDebugEnabled() ) {
+        if ( logger.isTraceEnabled() ) {
 
             Gson gson = new Gson();
 
@@ -197,7 +197,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
 
             for ( CMMPExchangeLdapGroup _group : _result ) {
                 _logMessage = String.format("%6d %s", i++, gson.toJson(_group));
-                logger.log(Level.DEBUG, _logMessage);
+                logger.log(Level.TRACE, _logMessage);
             }
         }
 
@@ -207,7 +207,7 @@ public class CMMPLdapQueryService implements CMMPLdapService {
     }
 
     private void logEntering() {
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+        logger.log(Level.TRACE, Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
     }
 
 }

@@ -45,7 +45,7 @@ public class DeltaSyncCMMP2CMMPDIRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
 
-        if ( args.containsOption(Constants.ARGS_DELTA) ) {
+        if ( args.containsOption(Constants.SyncArg.DELTA.getValue()) ) {
 
             logger.log(Level.INFO, String.format("Start running delta directory sync to CMMP-DI"));
 

@@ -37,7 +37,7 @@ public class CMMPCacheService {
     public void initDN2SMTP() {
 
         logger.debug("Initialising CMMP BDO groups...");
-        List<CMMPExchangeLdapGroup> _groups = this.cmmpLdapQueryService.getAllGroupUnderOU(Constants.CMMP_BASEOU);
+        List<CMMPExchangeLdapGroup> _groups = this.cmmpLdapQueryService.getAllGroupUnderOU(Constants.LdapOu.CMMP_BASE);
 
         for ( CMMPExchangeLdapGroup _group : _groups ) {
             if ( _group.getDn() != null ) {
@@ -52,7 +52,7 @@ public class CMMPCacheService {
         logger.info("{} BDO group entries have been initialised.", _groups.size());
 
         logger.debug("Initialising CMMP BDO users...");
-        List<CMMPExchangeLdapUser> _users = this.cmmpLdapQueryService.getAllUserUnderOU(Constants.CMMP_BASEOU);
+        List<CMMPExchangeLdapUser> _users = this.cmmpLdapQueryService.getAllUserUnderOU(Constants.LdapOu.CMMP_BASE);
 
         for ( CMMPExchangeLdapUser _user : _users ) {
             if ( _user.getDn() != null ) {

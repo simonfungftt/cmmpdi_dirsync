@@ -65,9 +65,9 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
 
-        if ( args.containsOption(Constants.ARGS_FULL_USER) ) {
+        if ( args.containsOption(Constants.SyncArg.FULL_USER.getValue()) ) {
 
-            String _logMessage = "Start running full directory sync to CMMP-DI";
+            String _logMessage = "Start running full directory sync (user) to CMMP-DI";
             logger.log(Level.INFO, _logMessage);
 
             /**
@@ -141,9 +141,9 @@ public class FullSyncCMMP2CMMPDIRunner implements ApplicationRunner {
         }
 
 
-        if ( args.containsOption(Constants.ARGS_FULL_GRP) ) {
+        if ( args.containsOption(Constants.SyncArg.FULL_GROUP.getValue()) ) {
 
-            String _logMessage = "Start running full directory sync to CMMP-DI";
+            String _logMessage = "Start running full directory sync (group) to CMMP-DI";
             logger.log(Level.INFO, _logMessage);
 
             /**

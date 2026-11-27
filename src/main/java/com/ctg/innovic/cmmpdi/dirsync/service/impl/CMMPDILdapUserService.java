@@ -92,7 +92,7 @@ public class CMMPDILdapUserService {
 
         LdapQuery query = LdapQueryBuilder.query()
                 .base(pOU)
-                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("inetOrgPerson");
+                .where(Constants.LdapField.OBJECT_CLASS).is("inetOrgPerson");
 
         _logMessage = String.format("LDAP Base DN: %s, filter: %s", query.base(), query.filter());
         logger.log(Level.DEBUG, _logMessage);
@@ -142,12 +142,12 @@ public class CMMPDILdapUserService {
         return true;
     }
 
-    public boolean deleteCMMPDIUserBySMTP(@NotNull String smtpAddress) {
-        logEntering();
-
-        CMMPDILdapUser cmmpdiUser = cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(smtpAddress);
-        return cmmpdiUser == null || deleteCMMPDIUserByDN(cmmpdiUser);
-    }
+//    public boolean deleteCMMPDIUserBySMTP(@NotNull String smtpAddress) {
+//        logEntering();
+//
+//        CMMPDILdapUser cmmpdiUser = cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(smtpAddress);
+//        return cmmpdiUser == null || deleteCMMPDIUserByDN(cmmpdiUser);
+//    }
 
     // -------------------------------------------------------------------------
     // Creation & Update Workflows
@@ -158,7 +158,7 @@ public class CMMPDILdapUserService {
     }
 
     protected boolean createCMMPDIUser(CMMPDILdapUser user) throws InvalidNameException {
-        LdapNameBuilder builder = LdapNameBuilder.newInstance(Constants.BASE_OU_WO_STARTING_COMMAND);
+        LdapNameBuilder builder = LdapNameBuilder.newInstance(Constants.LdapOu.BDO);
         String[] ous = extractOus(user.getDn());
         logger.debug("OU array = {}", Arrays.toString(ous));
 
@@ -169,8 +169,8 @@ public class CMMPDILdapUserService {
         Name dn = builder.add("cn", cn).build();
 
         DirContextAdapter context = buildBaseUserContext(dn, cn, user);
-        context.setAttributeValue(Constants.LDAP_FIELD_DISTINGUISHEDNAME, user.getDistinguishedName());
-        context.setAttributeValue(Constants.LDAP_FIELD_EXT7, String.valueOf(user.getExtensionAttribute7()));
+        context.setAttributeValue(Constants.LdapField.DISTINGUISHED_NAME, user.getDistinguishedName());
+        context.setAttributeValue(Constants.LdapField.EXTENSION_ATTRIBUTE_7, user.getExtensionAttribute7());
 
         return bindAndCacheUser(context, user.getEmail(), false);
     }
@@ -190,34 +190,34 @@ public class CMMPDILdapUserService {
         DirContextAdapter context = buildBaseUserContext(dn, cn, user);
 
         // WGD users are created as disabled accounts
-        context.addAttributeValue(Constants.LDAP_FIELD_USERACCOUNTCONTROL, "514");
-        context.addAttributeValue(Constants.LDAP_FIELD_ACCTSTATUS, "D");
+        context.addAttributeValue(Constants.LdapField.USER_ACCOUNT_CONTROL, "514");
+        context.addAttributeValue(Constants.LdapField.ACCT_STATUS, "D");
 
-        context.addAttributeValue(Constants.LDAP_FIELD_OUPATH, "/");
-        context.addAttributeValue(Constants.LDAP_FIELD_OUPATH, "/CMMPDI-BDOs");
-        context.addAttributeValue(Constants.LDAP_FIELD_OUPATH, "/CMMPDI-BDOs/WGD");
-        context.addAttributeValue(Constants.LDAP_FIELD_OUPATH, "/CMMPDI-BDOs/WGD/User");
+        context.addAttributeValue(Constants.LdapField.OU_PATH, "/");
+        context.addAttributeValue(Constants.LdapField.OU_PATH, "/CMMPDI-BDOs");
+        context.addAttributeValue(Constants.LdapField.OU_PATH, "/CMMPDI-BDOs/WGD");
+        context.addAttributeValue(Constants.LdapField.OU_PATH, "/CMMPDI-BDOs/WGD/User");
 
-        context.setAttributeValue(Constants.LDAP_FIELD_WHENCREATED, LDAP_TIMESTAMP_FORMAT.format(user.getWhenCreatedInstant()));
-        context.setAttributeValue(Constants.LDAP_FIELD_WHENCHANGED, LDAP_TIMESTAMP_FORMAT.format(user.getWhenChangedInstant()));
-        context.setAttributeValue(Constants.LDAP_FIELD_TELEPHONENUMBER, user.getTelephoneNumber());
-        context.setAttributeValue(Constants.LDAP_FIELD_TITLE, user.getTitle());
-        context.setAttributeValue(Constants.LDAP_FIELD_DISTINGUISHEDNAME, dn.toString());
-        context.addAttributeValue(Constants.LDAP_FIELD_PROXY_ADDRESS, user.getProxyAddresses());
+        context.setAttributeValue(Constants.LdapField.WHEN_CREATED, LDAP_TIMESTAMP_FORMAT.format(user.getWhenCreatedInstant()));
+        context.setAttributeValue(Constants.LdapField.WHEN_CHANGED, LDAP_TIMESTAMP_FORMAT.format(user.getWhenChangedInstant()));
+        context.setAttributeValue(Constants.LdapField.TELEPHONE_NUMBER, user.getTelephoneNumber());
+        context.setAttributeValue(Constants.LdapField.TITLE, user.getTitle());
+        context.setAttributeValue(Constants.LdapField.DISTINGUISHED_NAME, dn.toString());
+        context.addAttributeValue(Constants.LdapField.PROXY_ADDRESSES, user.getProxyAddresses());
 
         if ( user.getUserCert17() != null ) {
-            context.setAttributeValue(Constants.LDAP_FIELD_CERT17, toBase64Cert(user.getUserCert17()));
+            context.setAttributeValue(Constants.LdapField.USER_CERT_17, toBase64Cert(user.getUserCert17()));
         }
 
         if ( user.getUserCert18() != null ) {
-            context.setAttributeValue(Constants.LDAP_FIELD_CERT18, toBase64Cert(user.getUserCert18()));
+            context.setAttributeValue(Constants.LdapField.USER_CERT_18, toBase64Cert(user.getUserCert18()));
         }
 
         if ( user.getgCert() != null ) {
-            context.setAttributeValue(Constants.LDAP_FIELD_GCERT, toBase64Cert(user.getgCert()));
+            context.setAttributeValue(Constants.LdapField.G_CERT, toBase64Cert(user.getgCert()));
         }
         if ( user.getUserCert() != null ) {
-            context.setAttributeValue(Constants.LDAP_FIELD_ECERT, toBase64Cert(user.getUserCert()));
+            context.setAttributeValue(Constants.LdapField.USER_CERT, toBase64Cert(user.getUserCert()));
         }
 
         dumpLdifIfDebug("debug/" + cn + ".ldif", context);
@@ -245,29 +245,178 @@ public class CMMPDILdapUserService {
         logEntering();
 
         Name dn = LdapNameBuilder.newInstance(cmmpdiUser.getDn()).build();
-        logger.info("Going to update user attributes for smtp='{}', DN='{}'...", cmmpdiUser.getEmail(), dn);
+
+        String _logMessage = String.format("Going to update user attributes for smtp='%s', DN='%s'...", cmmpdiUser.getEmail(), dn);
+        logger.log(Level.DEBUG, _logMessage);
 
         List<ModificationItem> mods = new ArrayList<>();
 
-        String srcDisplayName = exchangeUser.getDisplayName();
-        String dstDisplayName = StringUtils.trimToEmpty(cmmpdiUser.getDisplayName());
+//        String srcDisplayName = StringUtils.trimToEmpty(exchangeUser.getDisplayName());
+//        String dstDisplayName = StringUtils.trimToEmpty(cmmpdiUser.getDisplayName());
+//
+//        if ( !dstDisplayName.equals(srcDisplayName) ) {
+//            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.DISPLAY_NAME, srcDisplayName, dstDisplayName);
+//            logger.log(Level.DEBUG, _logMessage);
+//            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.DISPLAY_NAME, srcDisplayName)));
+//        }
+//
+//        String srcTitle = StringUtils.trimToEmpty(exchangeUser.getTitle());
+//        String dstTitle = StringUtils.trimToEmpty(cmmpdiUser.getTitle());
+//
+//        if ( !dstDisplayName.equals(srcDisplayName) ) {
+//            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.TITLE, srcTitle, dstTitle);
+//            logger.log(Level.DEBUG, _logMessage);
+//            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.TITLE, srcTitle)));
+//        }
+//
+//        String exchangeExt1 = exchangeUser.getExtensionAttribute1();
+//        String cmmpdiExt1 = cmmpdiUser.getExtensionAttribute1();
+//
+//        if ( !exchangeExt1.equals(cmmpdiExt1) ) {
+//            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.EXT1, exchangeExt1, cmmpdiExt1);
+//            logger.log(Level.DEBUG, _logMessage);
+//            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE,
+//                    new BasicAttribute(Constants.LdapField.EXT1, exchangeUser.getExtensionAttribute1())));
+//        }
 
-        if (dstDisplayName.isEmpty() && StringUtils.isNotEmpty(srcDisplayName)) {
-            logger.info("Detected display name difference, CMMP='{}', while CMMP-DI one is empty", srcDisplayName);
-            mods.add(new ModificationItem(DirContext.ADD_ATTRIBUTE, new BasicAttribute("displayName", srcDisplayName)));
-        } else if (srcDisplayName != null && !Objects.equals(srcDisplayName, dstDisplayName)) {
-            logger.info("Detected display name difference, CMMP='{}', while CMMP-DI='{}'", srcDisplayName, cmmpdiUser.getDisplayName());
-            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute("displayName", srcDisplayName)));
+        // 1. displayName
+        String srcDisplayName = StringUtils.trimToEmpty(exchangeUser.getDisplayName());
+        String dstDisplayName = StringUtils.trimToEmpty(cmmpdiUser.getDisplayName());
+        if (!dstDisplayName.equals(srcDisplayName)) {
+            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.DISPLAY_NAME, srcDisplayName, dstDisplayName);
+            logger.log(Level.DEBUG, _logMessage);
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.DISPLAY_NAME, srcDisplayName)));
         }
 
-        int exchangeExt1 = parseIntOrDefault(exchangeUser.getExtensionAttribute1(), -1);
-        int cmmpdiExt1 = parseIntOrDefault(cmmpdiUser.getExtensionAttribute1(), -1);
+        // 2. title (Fixed the bug in your snippet where title was checking dstDisplayName)
+        String srcTitle = StringUtils.trimToEmpty(exchangeUser.getTitle());
+        String dstTitle = StringUtils.trimToEmpty(cmmpdiUser.getTitle());
+        if (!dstTitle.equals(srcTitle)) {
+            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.TITLE, srcTitle, dstTitle);
+            logger.log(Level.DEBUG, _logMessage);
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.TITLE, srcTitle)));
+        }
 
-        if (exchangeExt1 != cmmpdiExt1) {
-            logger.info("Detected ExtensionAttribute1 difference, CMMP='{}', while CMMP-DI='{}'",
-                    exchangeUser.getExtensionAttribute1(), cmmpdiUser.getExtensionAttribute1());
-            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE,
-                    new BasicAttribute("extensionAttribute1", exchangeUser.getExtensionAttribute1())));
+        // 3. sn (Surname)
+        String srcSn = StringUtils.trimToEmpty(exchangeUser.getSn());
+        String dstSn = StringUtils.trimToEmpty(cmmpdiUser.getSurname());
+        if (!dstSn.equals(srcSn)) {
+            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.SN, srcSn, dstSn);
+            logger.log(Level.DEBUG, _logMessage);
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.SN, srcSn)));
+        }
+
+        // 4. givenName (First Name)
+        String srcGivenName = StringUtils.trimToEmpty(exchangeUser.getGivenName());
+        String dstGivenName = StringUtils.trimToEmpty(cmmpdiUser.getFirstName());
+        if (!dstGivenName.equals(srcGivenName)) {
+            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.GIVEN_NAME, srcGivenName, dstGivenName);
+            logger.log(Level.DEBUG, _logMessage);
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.GIVEN_NAME, srcGivenName)));
+        }
+
+        // 5. cn (Common Name)
+//        String srcCn = StringUtils.trimToEmpty(exchangeUser.getCn());
+//        String dstCn = StringUtils.trimToEmpty(cmmpdiUser.getCommonName());
+//        if (!dstCn.equals(srcCn)) {
+//            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.CN, srcCn, dstCn);
+//            logger.log(Level.DEBUG, _logMessage);
+//            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.CN, srcCn)));
+//        }
+
+        // 6. distinguishedName
+//        String srcDistinguishedName = StringUtils.trimToEmpty(exchangeUser.getDistinguishedName());
+//        String dstDistinguishedName = StringUtils.trimToEmpty(cmmpdiUser.getDistinguishedName());
+//        if (!dstDistinguishedName.equals(srcDistinguishedName)) {
+//            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.DISTINGUISHEDNAME, srcDistinguishedName, dstDistinguishedName);
+//            logger.log(Level.DEBUG, _logMessage);
+//            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.DISTINGUISHEDNAME, srcDistinguishedName)));
+//        }
+
+        // 7. mail (Email)
+//        String srcMail = StringUtils.trimToEmpty(exchangeUser.getMail());
+//        String dstMail = StringUtils.trimToEmpty(cmmpdiUser.getEmail());
+//        if (!dstMail.equals(srcMail)) {
+//            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.MAIL, srcMail, dstMail);
+//            logger.log(Level.DEBUG, _logMessage);
+//            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.MAIL, srcMail)));
+//        }
+
+        // 8. telephoneNumber
+        String srcTelephoneNumber = StringUtils.trimToEmpty(exchangeUser.getTelephoneNumber());
+        String dstTelephoneNumber = StringUtils.trimToEmpty(cmmpdiUser.getTelephoneNumber());
+        if (!dstTelephoneNumber.equals(srcTelephoneNumber)) {
+            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.TELEPHONE_NUMBER, srcTelephoneNumber, dstTelephoneNumber);
+            logger.log(Level.DEBUG, _logMessage);
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.TELEPHONE_NUMBER, srcTelephoneNumber)));
+        }
+
+        // 9. physicalDeliveryOfficeName
+        String srcOffice = StringUtils.trimToEmpty(exchangeUser.getPhysicalDeliveryOfficeName());
+        String dstOffice = StringUtils.trimToEmpty(cmmpdiUser.getPhysicalDeliveryOfficeName());
+        if (!dstOffice.equals(srcOffice)) {
+            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.PHYSICAL_DELIVERY_OFFICE_NAME, srcOffice, dstOffice);
+            logger.log(Level.DEBUG, _logMessage);
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.PHYSICAL_DELIVERY_OFFICE_NAME, srcOffice)));
+        }
+
+        // 10. proxyAddresses (Formatted as comma-separated string per transformToCMMPDIUser)
+        String srcProxyAddresses = "";
+        if (exchangeUser.getProxyAddresses() != null && exchangeUser.getProxyAddresses().length > 0) {
+            srcProxyAddresses = String.join(",", exchangeUser.getProxyAddresses())
+                    .replaceAll("SMTP:", "")
+                    .replaceAll("smtp:", "");
+        }
+        String dstProxyAddresses = StringUtils.trimToEmpty(cmmpdiUser.getProxyAddresses());
+        if (!dstProxyAddresses.equals(srcProxyAddresses)) {
+            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.PROXY_ADDRESSES, srcProxyAddresses, dstProxyAddresses);
+            logger.log(Level.DEBUG, _logMessage);
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.PROXY_ADDRESSES, srcProxyAddresses)));
+        }
+
+        // 11. extensionAttribute1
+        String srcExt1 = StringUtils.trimToEmpty(String.valueOf(exchangeUser.getExtensionAttribute1()));
+        String dstExt1 = StringUtils.trimToEmpty(cmmpdiUser.getExtensionAttribute1());
+        if (!dstExt1.equals(srcExt1)) {
+            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.EXTENSION_ATTRIBUTE_1, srcExt1, dstExt1);
+            logger.log(Level.DEBUG, _logMessage);
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.EXTENSION_ATTRIBUTE_1, srcExt1)));
+        }
+
+        // 12. extensionAttribute3
+        String srcExt3 = StringUtils.trimToEmpty(String.valueOf(exchangeUser.getExtensionAttribute3()));
+        String dstExt3 = StringUtils.trimToEmpty(cmmpdiUser.getExtensionAttribute3());
+        if (!dstExt3.equals(srcExt3)) {
+            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.EXTENSION_ATTRIBUTE_3, srcExt3, dstExt3);
+            logger.log(Level.DEBUG, _logMessage);
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.EXTENSION_ATTRIBUTE_3, srcExt3)));
+        }
+
+        // 13. extensionAttribute7
+        String srcExt7 = StringUtils.trimToEmpty(String.valueOf(exchangeUser.getExtensionAttribute7()));
+        String dstExt7 = StringUtils.trimToEmpty(cmmpdiUser.getExtensionAttribute7());
+        if (!dstExt7.equals(srcExt7)) {
+            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.EXTENSION_ATTRIBUTE_7, srcExt7, dstExt7);
+            logger.log(Level.DEBUG, _logMessage);
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.EXTENSION_ATTRIBUTE_7, srcExt7)));
+        }
+
+        // 14. userCert (Binary / Base64 encoded per buildBaseUserContext)
+        String srcUserCert = StringUtils.trimToEmpty(toBase64Cert(exchangeUser.getUserCertificate()));
+        String dstUserCert = StringUtils.trimToEmpty(toBase64Cert(cmmpdiUser.getUserCert()));
+        if (!dstUserCert.equals(srcUserCert)) {
+            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.USER_CERT, srcUserCert, dstUserCert);
+            logger.log(Level.DEBUG, _logMessage);
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.USER_CERT, srcUserCert)));
+        }
+
+        // 15. gCert (Mapped from exchangeUser.getUserCertificate() per transformToCMMPDIUser)
+        String srcGCert = StringUtils.trimToEmpty(toBase64Cert(exchangeUser.getUserCertificate()));
+        String dstGCert = StringUtils.trimToEmpty(toBase64Cert(cmmpdiUser.getgCert()));
+        if (!dstGCert.equals(srcGCert)) {
+            _logMessage = String.format("Detected %s difference, CMMP='%s', while CMMP-DI='%s'", Constants.LdapField.G_CERT, srcGCert, dstGCert);
+            logger.log(Level.DEBUG, _logMessage);
+            mods.add(new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(Constants.LdapField.G_CERT, srcGCert)));
         }
 
         if (mods.isEmpty()) {
@@ -275,7 +424,7 @@ public class CMMPDILdapUserService {
             return;
         }
 
-        mods.forEach(mod -> logger.info(mod.toString()));
+        mods.forEach(mod -> logger.info(dn + mod.toString()));
         if (!executionDryrun) {
             ldapTemplate.modifyAttributes(dn, mods.toArray(new ModificationItem[0]));
         }
@@ -332,32 +481,32 @@ public class CMMPDILdapUserService {
 
         DirContextAdapter context = new DirContextAdapter(dn);
         context.setUpdateMode(false);
-        context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "top");
-        context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "person");
-        context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "organizationalPerson");
-        context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "inetOrgPerson");
-        context.addAttributeValue(Constants.LDAP_FIELD_OBJECT_CLASS, "user");
+        context.addAttributeValue(Constants.LdapField.OBJECT_CLASS, "top");
+        context.addAttributeValue(Constants.LdapField.OBJECT_CLASS, "person");
+        context.addAttributeValue(Constants.LdapField.OBJECT_CLASS, "organizationalPerson");
+        context.addAttributeValue(Constants.LdapField.OBJECT_CLASS, "inetOrgPerson");
+        context.addAttributeValue(Constants.LdapField.OBJECT_CLASS, "user");
 
-        context.setAttributeValue(Constants.LDAP_FIELD_CN, cn);
-        context.setAttributeValue(Constants.LDAP_FIELD_SN, user.getSurname());
-        context.setAttributeValue(Constants.LDAP_FIELD_GIVEN_NAME, user.getFirstName());
-        context.setAttributeValue(Constants.LDAP_FIELD_DISPLAY_NAME, user.getDisplayName());
-        context.setAttributeValue(Constants.LDAP_FIELD_MAIL, user.getEmail());
-        context.setAttributeValue(Constants.LDAP_FIELD_EXT1, user.getExtensionAttribute1());
-        context.setAttributeValue(Constants.LDAP_FIELD_EXT3, user.getExtensionAttribute3());
+        context.setAttributeValue(Constants.LdapField.CN, cn);
+        context.setAttributeValue(Constants.LdapField.SN, user.getSurname());
+        context.setAttributeValue(Constants.LdapField.GIVEN_NAME, user.getFirstName());
+        context.setAttributeValue(Constants.LdapField.DISPLAY_NAME, user.getDisplayName());
+        context.setAttributeValue(Constants.LdapField.MAIL, user.getEmail());
+        context.setAttributeValue(Constants.LdapField.EXTENSION_ATTRIBUTE_1, user.getExtensionAttribute1());
+        context.setAttributeValue(Constants.LdapField.EXTENSION_ATTRIBUTE_3, user.getExtensionAttribute3());
 
-        context.setAttributeValue(Constants.LDAP_FIELD_PROXY_ADDRESS, user.getProxyAddresses());
+        context.setAttributeValue(Constants.LdapField.PROXY_ADDRESSES, user.getProxyAddresses());
 
-        context.setAttributeValue(Constants.LDAP_FIELD_HIDEFROMADDRESSLISTS, user.getHideFromAddressLists() );
+        context.setAttributeValue(Constants.LdapField.HIDE_FROM_ADDRESS_LISTS, user.getHideFromAddressLists() );
 
-        context.setAttributeValue(Constants.LDAP_FIELD_USERACCOUNTCONTROL, "514");
+        context.setAttributeValue(Constants.LdapField.USER_ACCOUNT_CONTROL, "514");
 
         if ( user.getgCert() != null ) {
-            context.setAttributeValue(Constants.LDAP_FIELD_GCERT, toBase64Cert(user.getgCert()));
+            context.setAttributeValue(Constants.LdapField.G_CERT, toBase64Cert(user.getgCert()));
         }
 
         if ( user.getUserCert() != null ) {
-            context.setAttributeValue(Constants.LDAP_FIELD_ECERT, toBase64Cert(user.getUserCert()));
+            context.setAttributeValue(Constants.LdapField.USER_CERT, toBase64Cert(user.getUserCert()));
         }
 
         return context;
@@ -451,6 +600,6 @@ public class CMMPDILdapUserService {
     }
 
     private void logEntering() {
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+        logger.log(Level.TRACE, Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
     }
 }

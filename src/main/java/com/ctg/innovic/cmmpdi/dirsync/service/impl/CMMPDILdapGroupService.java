@@ -13,11 +13,14 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.ldap.NameAlreadyBoundException;
+import org.springframework.ldap.NameNotFoundException;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.ldap.support.LdapNameBuilder;
+import org.springframework.ldap.support.LdapUtils;
 import org.springframework.stereotype.Service;
 
 import javax.mail.internet.AddressException;
@@ -54,7 +57,7 @@ public class CMMPDILdapGroupService {
 
 
     private void logEntering() {
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+        logger.log(Level.TRACE, Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
     }
 
     public List<CMMPDILdapGroup> getAllGroupUnderParamOU(@NotNull String pOU) {
@@ -65,12 +68,21 @@ public class CMMPDILdapGroupService {
 
         LdapQuery query = LdapQueryBuilder.query()
                 .base(pOU)
-                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("group");
+                .where(Constants.LdapField.OBJECT_CLASS).is("group");
 
         _logMessage = String.format("LDAP Base DN: %s, filter: %s", query.base(), query.filter());
         logger.log(Level.DEBUG, _logMessage);
 
-        List<CMMPDILdapGroup> result = ldapTemplate.find(query, CMMPDILdapGroup.class);
+        List<CMMPDILdapGroup> result;
+
+        try {
+            result = ldapTemplate.find(query, CMMPDILdapGroup.class);
+        }
+        catch (NameNotFoundException e) {
+            logger.log(Level.WARN, String.format("OU %s does not exist. Creating OU hierarchy.", pOU));
+            createOuHierarchyIfNotExists(pOU);
+            result = Collections.emptyList();
+        }
 
         _logMessage = String.format("%06d group have been fetched from directory", result.size());
         logger.log(Level.INFO, _logMessage);
@@ -78,12 +90,42 @@ public class CMMPDILdapGroupService {
         return result;
     }
 
+    private void createOuHierarchyIfNotExists(@NotNull String pOU) {
+        if (pOU == null || pOU.isBlank()) {
+            return;
+        }
+
+        LdapName targetDn = LdapUtils.newLdapName(pOU);
+        LdapNameBuilder currentDnBuilder = LdapNameBuilder.newInstance();
+
+        // LdapName.getRdns() is ordered from top-most (rightmost) to leaf (leftmost)
+        for (Rdn rdn : targetDn.getRdns()) {
+            currentDnBuilder.add(rdn.getType(), rdn.getValue());
+
+            // Only attempt to create organizationalUnit entries
+            if (!"ou".equalsIgnoreCase(rdn.getType())) {
+                continue;
+            }
+
+            LdapName currentDn = currentDnBuilder.build();
+            try {
+                DirContextAdapter context = new DirContextAdapter(currentDn);
+                context.setAttributeValues("objectClass", new String[]{"top", "organizationalUnit"});
+                context.setAttributeValue("ou", rdn.getValue().toString());
+                ldapTemplate.bind(context);
+                logger.log(Level.INFO, String.format("Created missing OU: %s", currentDn));
+            } catch (NameAlreadyBoundException ignored) {
+                // Parent OU already exists (also handles concurrent creation safely)
+            }
+        }
+    }
+
 
     public boolean createOrUpdateCMMPDIGroup(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws InvalidNameException, DirSyncApplicationException {
 
         boolean _result = false;
 
-        logger.trace(Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
+        logger.trace(Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
 
         // Determine create or update case
         CMMPDILdapUser _user = this.cmmpdiLdapCacheService.getCMMPDIUserDnBySMTP(pCMMPExchangeLdapGroup.getMail());
@@ -183,7 +225,7 @@ public class CMMPDILdapGroupService {
 
     public List<Name> getMemberListBasedOnCMMPOfDI(CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws DirSyncApplicationException {
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        String _logMessage = Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
         logger.log(Level.TRACE, _logMessage);
 
         List<String> _memberSmtpList = this.convertMembershipListFromCMMP(pCMMPExchangeLdapGroup);
@@ -239,7 +281,7 @@ public class CMMPDILdapGroupService {
     public boolean createCMMPDIGroup(@NotNull CMMPExchangeLdapGroup pCMMPExchangeLdapGroup) throws InvalidNameException, DirSyncApplicationException {
         logEntering();
 
-        LdapNameBuilder builder = LdapNameBuilder.newInstance(Constants.BASE_OU_WO_STARTING_COMMAND);
+        LdapNameBuilder builder = LdapNameBuilder.newInstance(Constants.LdapOu.BDO);
 
         String[] ous = extractOus(pCMMPExchangeLdapGroup.getDn().toString());
 
@@ -262,17 +304,17 @@ public class CMMPDILdapGroupService {
                 "group"
         });
 
-        context.setAttributeValue(Constants.LDAP_FIELD_MAIL, pCMMPExchangeLdapGroup.getMail().toLowerCase());
-        context.setAttributeValue(Constants.LDAP_FIELD_CN, pCMMPExchangeLdapGroup.getCn());
-        context.setAttributeValue(Constants.LDAP_FIELD_DISTINGUISHEDNAME, pCMMPExchangeLdapGroup.getDistinguishedName());
-        context.setAttributeValue(Constants.LDAP_FIELD_DISPLAY_NAME, pCMMPExchangeLdapGroup.getDisplayName());
-        context.setAttributeValue(Constants.LDAP_FIELD_PROXY_ADDRESS, pCMMPExchangeLdapGroup.getProxyAddresses());
+        context.setAttributeValue(Constants.LdapField.MAIL, pCMMPExchangeLdapGroup.getMail().toLowerCase());
+        context.setAttributeValue(Constants.LdapField.CN, pCMMPExchangeLdapGroup.getCn());
+        context.setAttributeValue(Constants.LdapField.DISTINGUISHED_NAME, pCMMPExchangeLdapGroup.getDistinguishedName());
+        context.setAttributeValue(Constants.LdapField.DISPLAY_NAME, pCMMPExchangeLdapGroup.getDisplayName());
+        context.setAttributeValue(Constants.LdapField.PROXY_ADDRESSES, pCMMPExchangeLdapGroup.getProxyAddresses());
 
         // The expected format is DN of members in CMMP-DI
         List<String> _memberArray = this.convertMembershipListFromCMMP( pCMMPExchangeLdapGroup );
 
         for ( int i = 0; i < _memberArray.size(); i++ ) {
-            context.addAttributeValue(Constants.LDAP_FIELD_MEMBER, _memberArray.get(i));
+            context.addAttributeValue(Constants.LdapField.MEMBER, _memberArray.get(i));
         }
 
         _logMessage = "Group context = " + context;
@@ -287,7 +329,7 @@ public class CMMPDILdapGroupService {
         List<String> _result = new ArrayList<>();
 
         for (String memberDn : newMemberList) {
-            String _buffer = memberDn.toString() + Constants.BASE_OU;
+            String _buffer = memberDn.toString() + Constants.LdapOu.BDO;
             _result.add(_buffer);
         }
 
@@ -301,7 +343,7 @@ public class CMMPDILdapGroupService {
 
     private boolean updateGroupMembership(String smtpAddress, List<String> newMemberList) {
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        String _logMessage = Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
         logger.log(Level.TRACE, _logMessage);
 
         // Assume the group already exists
@@ -336,7 +378,7 @@ public class CMMPDILdapGroupService {
             for (String memberDn : newMemberList) {
 
                 BasicAttribute attr2Add = new BasicAttribute("member");
-                attr2Add.add(memberDn.toString() + Constants.BASE_OU);
+                attr2Add.add(memberDn.toString() + Constants.LdapOu.BDO);
 
                 ModificationItem addItem = new ModificationItem(
                         DirContext.ADD_ATTRIBUTE,

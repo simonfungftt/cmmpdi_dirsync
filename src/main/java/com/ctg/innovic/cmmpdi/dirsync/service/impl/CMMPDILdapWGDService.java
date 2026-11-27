@@ -139,7 +139,7 @@ public class CMMPDILdapWGDService {
 
     protected void syncWGDUserBySearchKey(String pSearchKey) throws InvalidNameException {
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        String _logMessage = Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
         logger.log(Level.TRACE, _logMessage);
 
         List<CMMPDILdapUser> _bdoUsers = getWGDUserInBDOOU(pSearchKey);
@@ -199,12 +199,12 @@ public class CMMPDILdapWGDService {
 
 
     public void syncWGDGroups() throws InvalidNameException {
-        syncWGDObjects(Constants.WGD_OPERATION_GROUP);
+        syncWGDObjects(Constants.WgdOperation.GROUP.getCode());
     }
 
 
     public void syncWGDUsers() throws InvalidNameException {
-        syncWGDObjects(Constants.WGD_OPERATION_USER);
+        syncWGDObjects(Constants.WgdOperation.USER.getCode());
     }
 
 
@@ -220,10 +220,10 @@ public class CMMPDILdapWGDService {
             String _log = String.format("Handling searchKey %s", searchKey);
             logger.log(Level.TRACE, _log);
 
-            if ( Constants.WGD_OPERATION_USER == mode) {
+            if ( Constants.WgdOperation.USER.getCode() == mode) {
                 syncWGDUserBySearchKey(searchKey);
             }
-            else if ( Constants.WGD_OPERATION_GROUP == mode) {
+            else if ( Constants.WgdOperation.GROUP.getCode() == mode) {
                 syncWGDGroupBySearchKey(searchKey);
             }
 
@@ -244,6 +244,6 @@ public class CMMPDILdapWGDService {
     }
 
     private void logEntering() {
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+        logger.log(Level.TRACE, Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
     }
 }

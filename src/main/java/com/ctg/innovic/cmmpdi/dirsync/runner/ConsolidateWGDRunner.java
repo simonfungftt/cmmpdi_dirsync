@@ -34,7 +34,7 @@ public class ConsolidateWGDRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
 
-        if ( args.containsOption(Constants.ARGS_WGD) ) {
+        if ( args.containsOption(Constants.SyncArg.WGD.getValue()) ) {
 
             /**
              * This process is to move CMMP-DI user/groups under BDO OUs, with

@@ -48,7 +48,7 @@ public class CMMPDILdapQueryService {
      * @return
      */
     public List<CMMPDILdapUser> listCMMPDIUsers() {
-        return listCMMPDIBDOorWGDUsers(Constants.LDAP_BASE_OU_BDO);
+        return listCMMPDIBDOorWGDUsers(Constants.LdapOu.BDO);
     }
 
 
@@ -57,7 +57,7 @@ public class CMMPDILdapQueryService {
      * @return
      */
     public List<CMMPDILdapUser> listCMMPDIWGDUsers() {
-        return listCMMPDIBDOorWGDUsers(Constants.LDAP_BASE_OU_WGD);
+        return listCMMPDIBDOorWGDUsers(Constants.LdapOu.WGD);
     }
 
 
@@ -66,7 +66,7 @@ public class CMMPDILdapQueryService {
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base(searchBase)
-                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("inetOrgPerson");
+                .where(Constants.LdapField.OBJECT_CLASS).is("inetOrgPerson");
 
         String _logMessage = String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter());
         logger.log(Level.DEBUG, _logMessage);
@@ -85,12 +85,12 @@ public class CMMPDILdapQueryService {
      * @return
      */
     public List<CMMPDILdapGroup> listCMMPDIGroups() {
-        return listCMMPDIBDOorWGDGroups(Constants.LDAP_BASE_OU_BDO);
+        return listCMMPDIBDOorWGDGroups(Constants.LdapOu.BDO);
     }
 
 
     public List<CMMPDILdapGroup> listCMMPDIWGDGroups() {
-        return listCMMPDIBDOorWGDGroups(Constants.LDAP_BASE_OU_WGD);
+        return listCMMPDIBDOorWGDGroups(Constants.LdapOu.WGD);
     }
 
 
@@ -99,7 +99,7 @@ public class CMMPDILdapQueryService {
 
         LdapQuery _query = LdapQueryBuilder.query()
                 .base(searchBase)
-                .where(Constants.LDAP_FIELD_OBJECT_CLASS).is("group");
+                .where(Constants.LdapField.OBJECT_CLASS).is("group");
 
         String _logMessage = String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter());
         logger.log(Level.DEBUG, _logMessage);
@@ -115,7 +115,7 @@ public class CMMPDILdapQueryService {
 
     public CMMPDILdapUser findOneCMMPDIUserByEmail(@NotNull String email) {
 
-        String _logMessage = Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
+        String _logMessage = Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName();
         logger.log(Level.TRACE, _logMessage);
 
         List<CMMPDILdapUser> _users = this.findUsersByEmail(email);
@@ -154,8 +154,8 @@ public class CMMPDILdapQueryService {
         logEntering();
 
         LdapQuery _query = LdapQueryBuilder.query()
-                .base(Constants.LDAP_BASE_OU_BDO)
-                .where("objectClass").is("inetOrgPerson").and("mail").is(email);
+                .base(Constants.LdapOu.BDO)
+                .where(Constants.LdapField.OBJECT_CLASS).is("inetOrgPerson").and(Constants.LdapField.MAIL).is(email);
 
         logger.log(Level.DEBUG, String.format("LDAP Base DN: %s, filter: %s", _query.base(), _query.filter()));
 
@@ -338,7 +338,6 @@ public class CMMPDILdapQueryService {
 
         try {
 
-            // TODO: This is read time query LDAP server, why do not get it from cache?
             CMMPDILdapUser _user = this.findOneCMMPDIUserByEmail(pSmtpAddress);
 
             if ( _user != null ) {
@@ -391,7 +390,7 @@ public class CMMPDILdapQueryService {
 
         List<CMMPDILdapUser> _users = this.findUsersByEmail(email);
 
-        if ( !CollectionUtils.isEmpty(_users) ) {            
+        if ( !CollectionUtils.isEmpty(_users) ) {
             _result = true;
             return _result;
         }
@@ -407,48 +406,6 @@ public class CMMPDILdapQueryService {
     }
 
 
-    /*
-    public boolean createOrUpdateContactInCMMPDI (CMMPExchangeLdapUser pCMMPExchangeLdapUser) {
-
-        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
-
-        logger.debug("Checking if SMTP address '" + pCMMPExchangeLdapUser.getMail() + "' exists or not ...");
-
-        List<CMMPDILdapUser> _userList = findUsersByEmail(pCMMPExchangeLdapUser.getMail());
-
-        List<CMMPDILdapGroup> _groupList = findGroupByEmail(pCMMPExchangeLdapUser.getMail());
-
-        if ( CollectionUtils.isEmpty(_userList) == false ) { // Found under user
-
-            logger.debug("Found SMTP address '" + pCMMPExchangeLdapUser.getMail() + "' is already in CMMP as user ...");
-
-            CMMPDILdapUser _targetUser = _userList.get(0);
-
-            if ( _targetUser.isCMMPDIMailbox() == true ) {
-                logger.info("This user '" + _targetUser.getEmail() + "' is CMMP-DI, skipping update.");
-            }
-            else {
-                logger.info("This user '" + _targetUser.getEmail() + "' is CMMP, performing update.");
-
-                updateUserAttributes(pCMMPExchangeLdapUser, _targetUser);
-            }
-        }
-
-        // New object
-        if ( CollectionUtils.isEmpty(_userList) == true && CollectionUtils.isEmpty(_groupList) == true ) {
-
-            logger.info( pCMMPExchangeLdapUser.getMail() + " could not be found in CMMP-DI, creating new...");
-
-//            this.createUserObjectInDI(pCMMPExchangeLdapUser);
-        }
-
-
-
-
-        return true;
-    }*/
-
-
     /**
      * Assume the given SMTP address exists in the expected OU
      *
@@ -462,15 +419,12 @@ public class CMMPDILdapQueryService {
 
         Name dn = LdapNameBuilder.newInstance(pCMMPDILdapGroup.getDn()).build();
 
-        logger.info("Going to update group attributes for "  + dn.toString() + "...");
+        String _logMessage = "Going to update group attributes for "  + dn.toString() + "...";
+        logger.log(Level.INFO, _logMessage);
 
         List<ModificationItem> _list = new ArrayList<>();
 
         if ( CollectionUtils.isEmpty(_list) == false ) {
-
-            // Handling for member
-//            Set<Member> _membersFromCMMP = pCMMPExchangeLdapGroup.get
-
         }
         else {
 
@@ -479,89 +433,7 @@ public class CMMPDILdapQueryService {
         return true;
     }
 
-
-
-//    private boolean updateUserAttributes(CMMPExchangeLdapUser pCMMPExchangeLdapUser, CMMPDILdapUser pCMMPDILdapUser) {
-//
-//        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
-//
-//        Name dn = LdapNameBuilder.newInstance(pCMMPDILdapUser.getDn()).build();
-//
-//        logger.info("Going to update user attributes for "  + dn.toString() + "...");
-//
-//        List<ModificationItem> _list = new ArrayList<>();
-//
-//        // Compare each of the field, and log delta changes
-//        if ( StringUtils.trimToEmpty(pCMMPDILdapUser.getDisplayName()).equals(StringUtils.EMPTY) ) {
-//            logger.info("Detected display name difference, CMMP='"
-//                    +  pCMMPExchangeLdapUser.getDisplayName() +"', while CMMP-DI one is empty");
-//
-//            _list.add(
-//                    new ModificationItem(
-//                            DirContext.ADD_ATTRIBUTE,
-//                            new BasicAttribute("displayName", pCMMPExchangeLdapUser.getDisplayName())
-//                    )
-//            );
-//        }
-//        else if ( pCMMPExchangeLdapUser.getDisplayName().compareTo(StringUtils.trimToEmpty(pCMMPDILdapUser.getDisplayName())) != 0 ) {
-//            logger.info("Detected display name difference, CMMP='"
-//                    +  pCMMPExchangeLdapUser.getDisplayName() +"', while CMMP-DI='" + pCMMPDILdapUser.getDisplayName() + "'");
-//
-//            _list.add(
-//                    new ModificationItem(
-//                            DirContext.REPLACE_ATTRIBUTE,
-//                            new BasicAttribute("displayName", pCMMPExchangeLdapUser.getDisplayName())
-//                    )
-//            );
-//        }
-//
-//        if ( pCMMPExchangeLdapUser.getExtensionAttribute1() != pCMMPDILdapUser.getExtensionAttribute1() ) {
-//            logger.info("Detected ExtensionAttribute1 difference, CMMP='"
-//                    +  pCMMPExchangeLdapUser.getExtensionAttribute1() +"', while CMMP-DI='" + pCMMPDILdapUser.getExtensionAttribute1() + "'");
-//
-//            _list.add(
-//                    new ModificationItem(
-//                            DirContext.REPLACE_ATTRIBUTE,
-//                            new BasicAttribute("extensionAttribute1", pCMMPExchangeLdapUser.getExtensionAttribute1())
-//                    )
-//            );
-//        }
-//
-//        // If there is any modification required
-//        if ( CollectionUtils.isEmpty(_list) == false ) {
-//
-//            ModificationItem[] _mods = new ModificationItem[ _list.size() ];
-//
-//            for ( int i = 0; i < _list.size(); i++ ) {
-//                _mods[i] = _list.get(i);
-//                logger.info(_mods[i].toString());
-//            }
-//
-//            // Execute modification
-//            ldapTemplate.modifyAttributes(dn, _mods);
-//        }
-//        else {
-//            logger.info("No difference is detected for user object '" + pCMMPExchangeLdapUser.getMail() + "'");
-//        }
-//
-//        return true;
-//    }
-
-
-//    private boolean createUserObjectInDI(CMMPExchangeLdapUser pCMMPExchangeLdapUser) {
-//
-//        logger.debug("Entering " + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName() );
-//
-//        Name dn = LdapNameBuilder.newInstance("ou=Users")
-//                .add("cn", pCMMPExchangeLdapUser.getCn())
-//                .build();
-//
-//        logger.info("Going to create user with this DN "  + dn.toString() + "...");
-//
-//        return true;
-//    }
-
     private void logEntering() {
-        logger.log(Level.TRACE, Constants.LOGGING_ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
+        logger.log(Level.TRACE, Constants.Logging.ENTERING + LogUtils.getCurrentClassName() + "." + LogUtils.getCurrentMethodName());
     }
 }
